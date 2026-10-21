@@ -2,7 +2,10 @@ name: gnostr-dev
 
 on:
   push:
-    branches: [main]
+    # The default branch of this repository is not `main`, and the work is
+    # done on branches that are pushed and rebased, so every branch push runs
+    # the pipeline. A tag push does not: that is the release workflow's.
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
   schedule:
@@ -81,6 +84,10 @@ jobs:
           shellcheck scripts/*.sh installers/install.sh gnostr-dev.sh
       - name: Compile the python scripts
         run: python3 -m compileall -q scripts
+      # A workflow that does not parse blocks the whole pipeline, the release
+      # one included.
+      - name: Check the workflow files
+        uses: docker://rhysd/actionlint:1.7.12
 
   manifest:
     name: manifest is up to date
