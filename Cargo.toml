@@ -116,7 +116,7 @@ uli-zk = "0.0.1"
 # radicle-ci-broker = "0.32.1"
 # radicle-job = "0.6.0"
 # radicle-source = "0.4.0"          # pulls radicle-surf 0.8, which does not
-#                                    # compile against git2 0.21
+#                                   # compile against git2 0.21
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # syd >= 3.24 pulls in hardened-malloc (needs glibc headers); 3.24-3.59 are all
