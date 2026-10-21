@@ -111,8 +111,8 @@ while read -r name yanked stable; do
     done
     [ "$skip" -eq 0 ] || continue
 
-    version=$(jq -r --arg n "$name" '
-        .crates[] | select(.name == $n)
+    version=$(jq -s -r --arg n "$name" '
+        .[] | select(.name == $n)
         | (.max_stable_version // .max_version // empty)
     ' "$work/all.json" | head -1)
 
@@ -145,7 +145,7 @@ while read -r name yanked stable; do
     fi
 
     printf '%s = "%s"\n' "$name" "$version" >> "$work/deps.txt"
-done < <(jq -r '.crates[] | [.name, (.yanked|tostring), ((.max_stable_version != null)|tostring)] | @tsv' \
+done < <(jq -s -r '.[] | [.name, (.yanked|tostring), ((.max_stable_version != null)|tostring)] | @tsv' \
          "$work/all.json" | LC_ALL=C sort -u -k1,1)
 
 resolved=$(wc -l < "$work/deps.txt" | tr -d ' ')
