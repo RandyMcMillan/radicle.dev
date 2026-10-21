@@ -1,0 +1,127 @@
+name: radicle-dev
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # The dependency list in Cargo.toml is generated from the crates.io
+    # search, so it goes stale as soon as the radicle ecosystem publishes
+    # something. Check it once a day, at a quiet hour.
+    - cron: "37 5 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    # The nightly run is only about the manifest.
+    if: github.event_name != 'schedule'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The radicle ecosystem is unix only - radicle-systemd, radicle-ssh
+        # and syd do not build on Windows - so the unix runners are what
+        # there is to test.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # Every native library in the tree is vendored: libgit2, libssh2,
+      # libsodium and OpenSSL are compiled from source. The runner image is
+      # enough for that - a C compiler, make and perl are all it needs.
+      - run: cargo build --locked --all-targets
+
+  test:
+    name: test (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # The tests create commits, which need an identity.
+      - name: Set a git identity
+        run: |
+          git config --global user.name ci
+          git config --global user.email ci@localhost
+      - run: cargo test --locked
+
+  lint:
+    name: lint
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Lint the shell scripts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck
+          shellcheck scripts/*.sh installers/install.sh
+      - name: Compile the python scripts
+        run: python3 -m compileall -q scripts
+
+  manifest:
+    name: manifest is up to date
+    # The dependency list is generated, so there is no point in checking it
+    # on every push: it changes when the ecosystem publishes, not when this
+    # repository does.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the tools the script needs
+        run: command -v curl jq
+      - name: Refresh the dependency list
+        run: |
+          ok=0
+          for attempt in 1 2 3; do
+            if scripts/update-crates.sh \
+              --exclude radicle-ed25519-compact --exclude radicle-uri --exclude rad-uri \
+              --exclude radicle-backup --exclude radicle-keystore --exclude gitorii \
+              --exclude radicle-httpd --exclude git-commit --exclude radicle-feed \
+              --exclude radicle-tui \
+              --optional radicle-native-ci --optional radicle-ci-adapter \
+              --optional radicle-ci-ambient --optional radicle-ci-broker \
+              --optional radicle-job --optional radicle-source \
+              --linux-only syd \
+              --linux-only rcp-tools-common --linux-only rcp-tools-filegen \
+              --linux-only rcp-tools-rchm --linux-only rcp-tools-rcmp \
+              --linux-only rcp-tools-rcp --linux-only rcp-tools-remote \
+              --linux-only rcp-tools-rlink --linux-only rcp-tools-rrm
+            then
+              ok=1
+              break
+            fi
+            echo "::warning::the crates.io search failed, retrying (attempt $attempt)"
+            sleep 30
+          done
+          [ "$ok" = 1 ]
+      - name: Fail when the manifest changed
+        run: |
+          if ! git diff --quiet -- Cargo.toml; then
+            echo "::error::Cargo.toml is out of date. Refresh it with scripts/update-crates.sh - see scripts/README.md - and commit the result."
+            git --no-pager diff -- Cargo.toml
+            exit 1
+          fi
