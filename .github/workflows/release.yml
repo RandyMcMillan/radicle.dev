@@ -13,6 +13,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  # One release at a time. A re-run of the same tag waits for the first one
+  # instead of cancelling it halfway: the release it publishes would be
+  # missing its assets.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
   TAG: ${{ github.ref_name }}
