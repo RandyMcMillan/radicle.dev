@@ -45,7 +45,7 @@ set -euo pipefail
 
 ORG="radicle-dev"
 DEFAULT_NODE="https://iris.radicle.network"
-DEFAULT_DEST="radicle-dev"
+DEFAULT_DEST="crates"
 DEFAULT_DEPTH="1"
 
 node="$DEFAULT_NODE"
