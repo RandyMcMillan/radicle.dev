@@ -29,6 +29,8 @@
 #   --install-rad   Install the radicle binaries (rad, radicle-node and
 #                   git-remote-rad) with https://radicle.dev/install, before
 #                   cloning. Skipped if rad is already installed.
+#   --force         Reinstall rad even if it is already installed. Requires
+#                   --install-rad.
 #   --dry-run       Show what would be cloned without cloning anything.
 #   -h, --help      Show this help.
 #
@@ -37,6 +39,7 @@
 #   scripts/clone-radicle-dev.sh --github
 #   scripts/clone-radicle-dev.sh --github --dest ~/src/radicle-dev --depth 0
 #   scripts/clone-radicle-dev.sh --install-rad
+#   scripts/clone-radicle-dev.sh --install-rad --force
 
 set -euo pipefail
 
@@ -52,6 +55,7 @@ source_github="false"
 dry_run="false"
 only=""
 install_rad="false"
+force="false"
 
 usage() {
     awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
@@ -102,6 +106,9 @@ while [ $# -gt 0 ]; do
         --install-rad)
             install_rad="true"
             ;;
+        --force)
+            force="true"
+            ;;
         -h|--help)
             usage
             exit 0
@@ -132,6 +139,10 @@ fi
 case "$depth" in
     ''|*[!0-9]*) die "--depth expects a number, got: $depth" ;;
 esac
+
+if [ "$force" = "true" ] && [ "$install_rad" != "true" ]; then
+    die "--force requires --install-rad"
+fi
 
 have git || die "git is required"
 
@@ -191,8 +202,11 @@ install_radicle() {
     local installer prefix
 
     if have rad; then
-        printf 'rad is already installed: %s\n' "$(rad --version 2>/dev/null | head -1)"
-        return 0
+        if [ "$force" != "true" ]; then
+            printf 'rad is already installed: %s\n' "$(rad --version 2>/dev/null | head -1)"
+            return 0
+        fi
+        printf 'reinstalling rad (%s)\n' "$(rad --version 2>/dev/null | head -1)"
     fi
 
     # The installer installs into $RAD_HOME, defaulting to ~/.radicle.
@@ -225,7 +239,11 @@ install_radicle() {
 if [ "$install_rad" = "true" ]; then
     if [ "$dry_run" = "true" ]; then
         if have rad; then
-            printf 'rad is already installed: %s\n' "$(rad --version 2>/dev/null | head -1)"
+            if [ "$force" = "true" ]; then
+                printf 'would reinstall the radicle binaries with https://radicle.dev/install\n'
+            else
+                printf 'rad is already installed: %s\n' "$(rad --version 2>/dev/null | head -1)"
+            fi
         else
             printf 'would install the radicle binaries with https://radicle.dev/install\n'
         fi

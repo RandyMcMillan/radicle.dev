@@ -26,6 +26,8 @@ scripts/clone-radicle-dev.sh [options] [destination]
 | `--dest <dir>` | Destination directory for the clones (default: `./radicle-dev`). |
 | `--depth <n>` | Create shallow clones with the given depth (default: `1`). Use `0` for the full history. |
 | `--only <name>` | Only clone the given repository; may be passed multiple times. |
+| `--install-rad` | Install the radicle binaries (`rad`, `radicle-node` and `git-remote-rad`) with <https://radicle.dev/install> before cloning. Skipped if `rad` is already installed. |
+| `--force` | Reinstall rad even if it is already installed. Requires `--install-rad`. |
 | `--dry-run` | Show what would be cloned without cloning anything. |
 | `-h`, `--help` | Show the help. |
 
@@ -37,6 +39,12 @@ scripts/clone-radicle-dev.sh
 
 # Clone all repositories from the GitHub organization
 scripts/clone-radicle-dev.sh --github
+
+# Install the radicle CLI first, then clone
+scripts/clone-radicle-dev.sh --install-rad
+
+# Reinstall (upgrade) the radicle CLI, then clone
+scripts/clone-radicle-dev.sh --install-rad --force
 
 # Clone a couple of repositories with their full history
 scripts/clone-radicle-dev.sh --github --only heartwood --only radicle-tui --depth 0
@@ -51,6 +59,7 @@ scripts/clone-radicle-dev.sh --github --dry-run
 - `curl` and `jq`, or the [GitHub CLI](https://cli.github.com) (`gh`) — `gh` is
   used when it is available and authenticated, otherwise the GitHub API is
   queried directly.
+- `tar`, `xz` and `ssh-keygen`, only for `--install-rad`.
 
 Existing directories are never touched; a repository that has already been
 cloned is skipped.
