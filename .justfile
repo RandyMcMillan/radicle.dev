@@ -5,12 +5,13 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # The command the tool installs under. That is the name the tool prints, the
-# name of its config directory and the name its releases are published under.
-name := "repos-manager"
+# name of its config directory, the name cargo writes the binary under and
+# the name its releases are published under.
+name := "gnostr-dev"
 
-# The Cargo package. cargo writes the binary under this name, so the file in
-# the build output and the command on the PATH have different names.
-package := "gnostr-dev"
+# The Cargo package. It carries the same name as the command, so the file in
+# the build output and the command on the PATH are one and the same.
+package := name
 
 # Where the command is installed. PREFIX overrides it.
 prefix := env_var_or_default("PREFIX", home_dir() / ".local")
@@ -36,7 +37,7 @@ act_image := "catthehacker/ubuntu:full-latest"
 # empty one - so the platform is mapped to an image and the matrix is picked
 # with --matrix. macOS cannot run in a linux container, so those legs are
 # skipped unless they are mapped to the ubuntu image on purpose.
-act_flags := "-W .github/workflows/radicle-dev.yml --container-architecture linux/amd64 -P ubuntu-latest=" + act_image
+act_flags := "-W .github/workflows/gnostr-dev.yml --container-architecture linux/amd64 -P ubuntu-latest=" + act_image
 
 # List the commands.
 default:
@@ -55,8 +56,10 @@ test:
     cargo test --locked
 
 # Test coverage. Needs cargo-llvm-cov: cargo install cargo-llvm-cov.
+# Also needs the LLVM tools (llvm-cov, llvm-profdata) from rustup's
+# llvm-tools-preview component or a system LLVM such as Homebrew's.
 coverage:
-    cargo llvm-cov --locked --summary-only
+    LLVM_COV="${LLVM_COV:-$(command -v llvm-cov || echo /opt/homebrew/opt/llvm/bin/llvm-cov)}" LLVM_PROFDATA="${LLVM_PROFDATA:-$(command -v llvm-profdata || echo /opt/homebrew/opt/llvm/bin/llvm-profdata)}" cargo llvm-cov --locked --summary-only
 
 # Format the code.
 fmt:
@@ -72,7 +75,7 @@ clippy:
 
 # Lint the shell scripts. Needs shellcheck.
 shellcheck:
-    shellcheck scripts/*.sh installers/install.sh
+    shellcheck scripts/*.sh installers/install.sh gnostr-dev.sh
 
 # Check the python scripts.
 python-check:
@@ -159,7 +162,7 @@ clean:
 
 # List the jobs of the workflow.
 act-list:
-    act -W .github/workflows/radicle-dev.yml --list
+    act -W .github/workflows/gnostr-dev.yml --list
 
 # Pull the image act runs the jobs in.
 act-pull:
