@@ -18,6 +18,7 @@ OUTPUT=""
 DRY_RUN=0
 PER_PAGE=100
 EXCLUDE=()
+LINUX_ONLY=()
 
 # crates.io requires a User-Agent on every request.
 USER_AGENT="radicle-dev-update-crates (https://github.com/radicle-dev)"
@@ -33,6 +34,8 @@ Options:
   -m, --manifest <path>  Cargo.toml to update (default: "$MANIFEST")
   -o, --output <path>    write to <path> instead of updating the manifest
       --exclude <name>   skip a crate; repeatable
+      --linux-only <name>
+                          put a crate in the Linux target section; repeatable
       --dry-run          print the resolved dependencies, change nothing
   -h, --help             show this help
 
@@ -49,6 +52,8 @@ while [ $# -gt 0 ]; do
         -o|--output)   OUTPUT="${2:?--output needs a value}"; shift 2 ;;
         --exclude)
             EXCLUDE+=("${2:?--exclude needs a value}"); shift 2 ;;
+        --linux-only)
+            LINUX_ONLY+=("${2:?--linux-only needs a value}"); shift 2 ;;
         --dry-run)     DRY_RUN=1; shift ;;
         -h|--help)     usage; exit 0 ;;
         *) echo "error: unknown option '$1'" >&2; usage >&2; exit 1 ;;
@@ -151,12 +156,26 @@ done < <(jq -s -r '.[] | [.name, (.yanked|tostring), ((.max_stable_version != nu
 resolved=$(wc -l < "$work/deps.txt" | tr -d ' ')
 echo "resolved $resolved usable crates" >&2
 
+# --- 3. write the dependencies out -------------------------------------------
+
+# Crates that only build on Linux live in a target specific section.
+: > "$work/linux.txt"
+: > "$work/normal.txt"
+while read -r entry; do
+    name=${entry%% =*}
+    for lo in ${LINUX_ONLY[@]+"${LINUX_ONLY[@]}"}; do
+        if [ "$name" = "$lo" ]; then
+            echo "$entry" >> "$work/linux.txt"
+            continue 2
+        fi
+    done
+    echo "$entry" >> "$work/normal.txt"
+done < "$work/deps.txt"
+
 if [ "$DRY_RUN" -eq 1 ]; then
     cat "$work/deps.txt"
     exit 0
 fi
-
-# --- 3. write the dependencies out -------------------------------------------
 
 if [ -n "$OUTPUT" ]; then
     cp "$work/deps.txt" "$OUTPUT"
@@ -164,43 +183,41 @@ if [ -n "$OUTPUT" ]; then
     exit 0
 fi
 
-# Replace the body of the [dependencies] section, keeping the section header,
-# the comment block that follows it, any further comments in the section (for
-# instance the list of crates that had to be excluded) and every other section.
-awk -v deps="$work/deps.txt" -v comments="$work/comments.txt" '
-    BEGIN { in_deps = 0; printed = 0; header_done = 0 }
+# Replace the dependency entries of the [dependencies] and of the Linux target
+# section, leaving every comment, blank line and other section untouched.
+awk -v deps="$work/normal.txt" -v linuxdeps="$work/linux.txt" '
+    function emit(file,   line) {
+        while ((getline line < file) > 0) print line
+    }
+    function close_section() {
+        if (sect == "deps" && !emitted) emit(deps)
+        if (sect == "linux" && !emitted) emit(linuxdeps)
+        sect = ""; emitted = 0
+    }
+    BEGIN { sect = ""; emitted = 0; seen_linux = 0 }
     /^[[:space:]]*\[/ {
-        if (in_deps) {
-            # closing the dependencies section: emit the new body first
-            if (!printed) {
-                while ((getline line < deps) > 0) print line
-                printed = 1
-            }
-            in_deps = 0
-        }
+        close_section()
         print
-        if ($0 ~ /^[[:space:]]*\[dependencies\][[:space:]]*$/) in_deps = 1
+        if ($0 ~ /^[[:space:]]*\[dependencies\][[:space:]]*$/) sect = "deps"
+        else if ($0 ~ /cfg\(target_os = "linux"\)/) { sect = "linux"; seen_linux = 1 }
         next
     }
-    in_deps {
-        if ($0 ~ /^[[:space:]]*#/) {
-            if (!header_done) {
-                print          # the comment block right below the header
-                next
-            }
-            print $0 > comments
-            next
-        }
-        if (!header_done && NF > 0) header_done = 1
+    sect != "" {
+        # keep comments and blank lines where they are
+        if ($0 ~ /^[[:space:]]*#/ || $0 ~ /^[[:space:]]*$/) { print; next }
+        # first dependency line of the section: emit the new list here
+        if (!emitted) { emit(sect == "deps" ? deps : linuxdeps); emitted = 1 }
         next
     }
     { print }
     END {
-        if (in_deps && !printed) {
-            while ((getline line < deps) > 0) print line
+        close_section()
+        if (!seen_linux && (getline line < linuxdeps) > 0) {
+            print ""
+            print "[target.'"'"'cfg(target_os = \"linux\")'"'"'.dependencies]"
+            print line
+            while ((getline line < linuxdeps) > 0) print line
         }
-        # Re-attach the comments that were not part of the header block.
-        while ((getline line < comments) > 0) print line
     }
 ' "$MANIFEST" > "$work/manifest.new"
 
