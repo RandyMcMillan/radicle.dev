@@ -137,7 +137,7 @@ mod tests {
 
     const PAGE: &str = r#"{"repositories":{"cursor":"MjAyNS0xMC0xMVQw",
         "results":[
-          {"name":"repos-manager","owner":{"canonicalName":"~dxsk"}},
+          {"name":"gnostr-dev","owner":{"canonicalName":"~dxsk"}},
           {"name":"secret","owner":{"canonicalName":"~dxsk"}},
           {"name":"shared","owner":{"canonicalName":"~emersion"}}
         ]}}"#;
@@ -147,9 +147,9 @@ mod tests {
         let page: Value = serde_json::from_str(PAGE).unwrap();
         let repos = parse("git.sr.ht", results(&page));
         assert_eq!(repos.len(), 3);
-        assert_eq!(repos[0].full_name, "~dxsk/repos-manager");
-        assert_eq!(repos[0].ssh_url, "git@git.sr.ht:~dxsk/repos-manager");
-        assert_eq!(repos[0].https_url, "https://git.sr.ht/~dxsk/repos-manager");
+        assert_eq!(repos[0].full_name, "~dxsk/gnostr-dev");
+        assert_eq!(repos[0].ssh_url, "git@git.sr.ht:~dxsk/gnostr-dev");
+        assert_eq!(repos[0].https_url, "https://git.sr.ht/~dxsk/gnostr-dev");
         // A repo shared through an ACL keeps its own owner.
         assert_eq!(repos[2].full_name, "~emersion/shared");
         assert_eq!(next_cursor(&page).as_deref(), Some("MjAyNS0xMC0xMVQw"));
@@ -159,10 +159,10 @@ mod tests {
     fn urls_follow_the_host() {
         let page: Value = serde_json::from_str(PAGE).unwrap();
         let repos = parse("git.example.org", results(&page));
-        assert_eq!(repos[0].ssh_url, "git@git.example.org:~dxsk/repos-manager");
+        assert_eq!(repos[0].ssh_url, "git@git.example.org:~dxsk/gnostr-dev");
         assert_eq!(
             repos[0].https_url,
-            "https://git.example.org/~dxsk/repos-manager"
+            "https://git.example.org/~dxsk/gnostr-dev"
         );
     }
 
@@ -250,7 +250,7 @@ mod tests {
     const GRAPHQL_PAGE: &str = r##"{"repositories":{"cursor":"MjU=","results":[
         {"id":1,"rid":"b9d5bf1a-0c58-4b3d-9f06-6a3c0a1e2f11",
          "created":"2022-03-14T09:26:53Z","updated":"2024-11-02T17:04:10Z",
-         "owner":{"canonicalName":"~dxsk"},"name":"repos-manager",
+         "owner":{"canonicalName":"~dxsk"},"name":"gnostr-dev",
          "description":"Sync every repository you can access","visibility":"PUBLIC",
          "readme":null,"access":"RW"},
         {"id":2,"rid":"0f1c6b52-7e0d-4a7e-8d5f-1b2a3c4d5e6f",
@@ -264,9 +264,9 @@ mod tests {
         let page: Value = serde_json::from_str(GRAPHQL_PAGE).unwrap();
         let repos = parse("git.sr.ht", results(&page));
         let names: Vec<_> = repos.iter().map(|r| r.full_name.as_str()).collect();
-        assert_eq!(names, ["~dxsk/repos-manager", "~dxsk/dotfiles"]);
-        assert_eq!(repos[0].https_url, "https://git.sr.ht/~dxsk/repos-manager");
-        assert_eq!(repos[0].ssh_url, "git@git.sr.ht:~dxsk/repos-manager");
+        assert_eq!(names, ["~dxsk/gnostr-dev", "~dxsk/dotfiles"]);
+        assert_eq!(repos[0].https_url, "https://git.sr.ht/~dxsk/gnostr-dev");
+        assert_eq!(repos[0].ssh_url, "git@git.sr.ht:~dxsk/gnostr-dev");
         assert_eq!(next_cursor(&page).as_deref(), Some("MjU="));
     }
 

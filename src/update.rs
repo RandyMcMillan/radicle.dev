@@ -24,8 +24,8 @@ pub const CURRENT: &str = env!("CARGO_PKG_VERSION");
 pub const REFRESH_ARG: &str = "__refresh-update-cache";
 /// Where the releases of this tool are published. It is this repository,
 /// not the upstream project: an upstream release carries a binary that calls
-/// itself `repos-manager`, and a self-update that installed it would replace
-/// gnostr-dev with a tool of another name.
+/// itself by the upstream name, and a self-update that installed it would
+/// replace gnostr-dev with a tool of another name.
 const DEFAULT_API: &str = "https://api.github.com/repos/RandyMcMillan/radicle.dev/releases/latest";
 const DEFAULT_TTL: u64 = 86_400;
 const MAX_ASSET_BYTES: u64 = 200 * 1024 * 1024;
