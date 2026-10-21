@@ -83,6 +83,17 @@ Packagers can stage the install with `DESTDIR`. Cargo works too, straight from t
 cargo install --path .
 ```
 
+The [releases of this repository](https://github.com/RandyMcMillan/radicle.dev/releases) carry a prebuilt binary for every platform, as `gnostr-dev-<target>.tar.gz`:
+
+```sh
+# Linux x86_64
+curl -fsSLO https://github.com/RandyMcMillan/radicle.dev/releases/latest/download/gnostr-dev-x86_64-unknown-linux-musl.tar.gz
+tar -xzf gnostr-dev-x86_64-unknown-linux-musl.tar.gz gnostr-dev
+install -m755 gnostr-dev ~/.local/bin/gnostr-dev
+```
+
+The targets are `x86_64` and `aarch64` for `unknown-linux-musl`, `apple-darwin` and `pc-windows-msvc`. The binary inside the archive is called `gnostr-dev`, and `SHA256SUMS` next to the archives holds their checksums.
+
 </details>
 
 <details>
@@ -666,8 +677,11 @@ This tool lives in [radicle.dev](https://github.com/RandyMcMillan/radicle.dev). 
 
 | When | What |
 |---|---|
-| On every push and pull request | Build and test on Linux and macOS, `rustfmt`, `clippy`, ShellCheck and the python check |
+| On every push and pull request | Build and test on Linux and macOS, `rustfmt`, `clippy`, ShellCheck, the python check and the workflow files |
 | Every night | The dependency list of `Cargo.toml` is refreshed from the crates.io search, and the job fails when the result differs from the committed file |
+| On a `v*` tag | The release workflow builds the binary for the six targets, attaches one archive per target to the release and publishes their `SHA256SUMS` |
+
+The release workflow is `.github/workflows/release.yml`. The archives it publishes are named `gnostr-dev-<target>`, which is what `gnostr-dev update` looks for.
 
 The same jobs run locally, in a container, with [act](https://github.com/nektos/act): `just act-lint`, `just act-build`, `just act-test` and `just act-all`.
 
@@ -693,6 +707,8 @@ The same jobs run locally, in a container, with [act](https://github.com/nektos/
    ```sh
    git push origin main v1.1.0
    ```
+
+   The tag starts the release workflow: it builds the archives, attaches them to the release with their checksums, and that release is what `gnostr-dev update` finds.
 
 There is no automatic version bump: the version only changes through the release script.
 
