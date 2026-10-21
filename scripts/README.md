@@ -147,6 +147,11 @@ scripts/update-crates.sh \
   --linux-only rcp-tools-remote --linux-only rcp-tools-rlink --linux-only rcp-tools-rrm
 ```
 
+The same command runs in CI: `.github/workflows/radicle-dev.yml` refreshes the
+manifest every night and fails when the result differs from the committed
+`Cargo.toml`. That is the signal to run the command above and commit what it
+writes.
+
 ### Feature guards
 
 Six crates resolve but do not compile next to the rest of the tree. They are
