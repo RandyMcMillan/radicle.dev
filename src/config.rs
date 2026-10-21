@@ -127,7 +127,6 @@ impl Settings {
 
     /// `env` is injected so tests do not race on the process environment.
     pub fn load_from(path: &Path, env: impl Fn(&str) -> Option<String>) -> Result<Self> {
-        let env_nonempty = |key: &str| env(key).filter(|v| !v.is_empty());
         // The settings live in GNOSTR_DEV_* now; the older REPOS_MANAGER_*
         // is still read, so the setups that predate the rename keep working.
         let env_setting = |key: &str| {
@@ -421,6 +420,20 @@ mod tests {
         assert_eq!(s.parallel, 9);
         assert!(!s.use_https);
         assert!(!s.check_updates);
+    }
+
+    #[test]
+    fn the_new_env_names_win_over_the_old_ones() {
+        let (_d, p) = write(r#"{"base_dir":"/from/file"}"#);
+        let vars = [
+            ("GNOSTR_DEV_BASE_DIR", "/from/new-env"),
+            ("REPOS_MANAGER_BASE_DIR", "/from/old-env"),
+            ("GNOSTR_DEV_PARALLEL", "7"),
+            ("REPOS_MANAGER_PARALLEL", "9"),
+        ];
+        let s = Settings::load_from(&p, env(&vars)).unwrap();
+        assert_eq!(s.base_dir, PathBuf::from("/from/new-env"));
+        assert_eq!(s.parallel, 7);
     }
 
     #[test]

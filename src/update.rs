@@ -22,7 +22,11 @@ use crate::{http, output};
 
 pub const CURRENT: &str = env!("CARGO_PKG_VERSION");
 pub const REFRESH_ARG: &str = "__refresh-update-cache";
-const DEFAULT_API: &str = "https://api.github.com/repos/Dxsk/repos-manager/releases/latest";
+/// Where the releases of this tool are published. It is this repository,
+/// not the upstream project: an upstream release carries a binary that calls
+/// itself `repos-manager`, and a self-update that installed it would replace
+/// gnostr-dev with a tool of another name.
+const DEFAULT_API: &str = "https://api.github.com/repos/RandyMcMillan/radicle.dev/releases/latest";
 const DEFAULT_TTL: u64 = 86_400;
 const MAX_ASSET_BYTES: u64 = 200 * 1024 * 1024;
 
@@ -166,10 +170,10 @@ fn fetch_release(url: &str, timeout: Duration) -> Result<Release> {
         .get(url)
         .header("Accept", "application/vnd.github+json")
         .call()
-        .context("cannot reach the release API")?
+        .with_context(|| format!("cannot read the release list at {url}"))?
         .body_mut()
         .read_json()
-        .context("unexpected release API response")
+        .with_context(|| format!("unexpected release API response at {url}"))
 }
 
 /// Entry point of the detached child.
@@ -198,7 +202,7 @@ pub fn asset_name_for(os: &str, arch: &str) -> Result<String> {
         "windows" => format!("{arch}-pc-windows-msvc.zip"),
         other => bail!("no prebuilt binary for {other}"),
     };
-    Ok(format!("repos-manager-{name}"))
+    Ok(format!("gnostr-dev-{name}"))
 }
 
 pub fn asset_name() -> Result<String> {
@@ -231,9 +235,9 @@ fn hex(bytes: &[u8]) -> String {
 
 fn extract_binary(archive: &[u8], asset: &str) -> Result<Vec<u8>> {
     let bin = if cfg!(windows) {
-        "repos-manager.exe"
+        "gnostr-dev.exe"
     } else {
-        "repos-manager"
+        "gnostr-dev"
     };
     let is_bin = |p: &Path| p.file_name().is_some_and(|n| n == bin);
     let mut out = Vec::new();
@@ -345,13 +349,13 @@ mod tests {
 
     #[test]
     fn checksum_lookup() {
-        let sums = "abc123  repos-manager-x86_64-unknown-linux-musl.tar.gz\nDEF456 *repos-manager-x86_64-pc-windows-msvc.zip\n";
+        let sums = "abc123  gnostr-dev-x86_64-unknown-linux-musl.tar.gz\nDEF456 *gnostr-dev-x86_64-pc-windows-msvc.zip\n";
         assert_eq!(
-            expected_checksum(sums, "repos-manager-x86_64-unknown-linux-musl.tar.gz").as_deref(),
+            expected_checksum(sums, "gnostr-dev-x86_64-unknown-linux-musl.tar.gz").as_deref(),
             Some("abc123")
         );
         assert_eq!(
-            expected_checksum(sums, "repos-manager-x86_64-pc-windows-msvc.zip").as_deref(),
+            expected_checksum(sums, "gnostr-dev-x86_64-pc-windows-msvc.zip").as_deref(),
             Some("def456")
         );
         assert_eq!(expected_checksum(sums, "nope"), None);
@@ -361,15 +365,15 @@ mod tests {
     fn asset_names_match_release_targets() {
         assert_eq!(
             asset_name_for("linux", "aarch64").unwrap(),
-            "repos-manager-aarch64-unknown-linux-musl.tar.gz"
+            "gnostr-dev-aarch64-unknown-linux-musl.tar.gz"
         );
         assert_eq!(
             asset_name_for("macos", "x86_64").unwrap(),
-            "repos-manager-x86_64-apple-darwin.tar.gz"
+            "gnostr-dev-x86_64-apple-darwin.tar.gz"
         );
         assert_eq!(
             asset_name_for("windows", "x86_64").unwrap(),
-            "repos-manager-x86_64-pc-windows-msvc.zip"
+            "gnostr-dev-x86_64-pc-windows-msvc.zip"
         );
         assert!(asset_name_for("freebsd", "x86_64").is_err());
         assert!(asset_name_for("linux", "riscv64").is_err());
@@ -378,14 +382,14 @@ mod tests {
     #[test]
     fn asset_name_for_this_platform() {
         let n = asset_name().unwrap();
-        assert!(n.starts_with("repos-manager-"));
+        assert!(n.starts_with("gnostr-dev-"));
         assert!(n.ends_with(".tar.gz") || n.ends_with(".zip"));
     }
 
     const BIN: &str = if cfg!(windows) {
-        "repos-manager.exe"
+        "gnostr-dev.exe"
     } else {
-        "repos-manager"
+        "gnostr-dev"
     };
 
     fn tar_gz(name: &str, data: &[u8]) -> Vec<u8> {
@@ -453,28 +457,28 @@ mod tests {
         let hint = |p: &str| package_manager_hint(Path::new(p));
         let system = Some("update it with your system package manager");
         let brew = Some("run: brew upgrade gnostr-dev");
-        assert_eq!(hint("/usr/bin/repos-manager"), system);
-        assert_eq!(hint("/opt/homebrew/bin/repos-manager"), brew);
+        assert_eq!(hint("/usr/bin/gnostr-dev"), system);
+        assert_eq!(hint("/opt/homebrew/bin/gnostr-dev"), brew);
         assert_eq!(
-            hint("/usr/local/Cellar/repos-manager/1.0.0/bin/repos-manager"),
+            hint("/usr/local/Cellar/gnostr-dev/1.0.0/bin/gnostr-dev"),
             brew
         );
         assert_eq!(
-            hint(r"C:\Users\me\scoop\apps\repos-manager\current\repos-manager.exe"),
+            hint(r"C:\Users\me\scoop\apps\gnostr-dev\current\gnostr-dev.exe"),
             Some("run: scoop update gnostr-dev")
         );
         assert_eq!(
-            hint(r"C:\Users\me\AppData\Local\Microsoft\WinGet\Packages\x\repos-manager.exe"),
+            hint(r"C:\Users\me\AppData\Local\Microsoft\WinGet\Packages\x\gnostr-dev.exe"),
             Some("run: winget upgrade gnostr-dev")
         );
         assert_eq!(
-            hint("/home/me/.cargo/bin/repos-manager"),
+            hint("/home/me/.cargo/bin/gnostr-dev"),
             Some("run: cargo install gnostr-dev")
         );
-        assert_eq!(hint("/home/me/.local/bin/repos-manager"), None);
-        assert_eq!(hint("/usr/local/bin/repos-manager"), None);
+        assert_eq!(hint("/home/me/.local/bin/gnostr-dev"), None);
+        assert_eq!(hint("/usr/local/bin/gnostr-dev"), None);
         assert_eq!(
-            hint(r"C:\Users\me\AppData\Local\Programs\repos-manager\repos-manager.exe"),
+            hint(r"C:\Users\me\AppData\Local\Programs\gnostr-dev\gnostr-dev.exe"),
             None
         );
     }
@@ -528,7 +532,7 @@ mod tests {
 
     #[test]
     fn verified_binary_checks_sha256() {
-        let name = "repos-manager-x86_64-unknown-linux-musl.tar.gz";
+        let name = "gnostr-dev-x86_64-unknown-linux-musl.tar.gz";
         let archive = tar_gz(BIN, b"new binary");
         let good_sums = format!("{}  {name}\n", hex(&Sha256::digest(&archive)));
         let release = |assets: &[&str]| Release {

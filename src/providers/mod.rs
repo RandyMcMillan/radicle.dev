@@ -319,13 +319,13 @@ pub mod tests {
         let err = run_capture(Command::new("git").arg("no-such-subcommand")).unwrap_err();
         assert!(err.to_string().contains("no-such-subcommand"), "{err}");
 
-        let err = run_capture(&mut Command::new("repos-manager-no-such-cli")).unwrap_err();
+        let err = run_capture(&mut Command::new("gnostr-dev-no-such-cli")).unwrap_err();
         assert!(err.to_string().contains("cannot run"), "{err}");
     }
 
     #[test]
     fn missing_cli_fails_the_host() {
-        let err = require_cli("repos-manager-no-such-cli").unwrap_err();
+        let err = require_cli("gnostr-dev-no-such-cli").unwrap_err();
         assert!(matches!(err, ListError::Fail(e) if e.to_string().contains("not found in PATH")));
     }
 
@@ -422,8 +422,8 @@ pub mod tests {
     fn cli_detection() {
         assert!(has_cli("git"));
         assert!(require_cli("git").is_ok());
-        assert!(!has_cli("repos-manager-no-such-cli"));
-        let Err(ListError::Fail(e)) = require_cli("repos-manager-no-such-cli") else {
+        assert!(!has_cli("gnostr-dev-no-such-cli"));
+        let Err(ListError::Fail(e)) = require_cli("gnostr-dev-no-such-cli") else {
             panic!("expected a failure");
         };
         assert!(e.to_string().contains("not found"));
@@ -435,7 +435,7 @@ pub mod tests {
         assert!(out.starts_with("git version"));
         let err = run_capture(Command::new("git").arg("no-such-subcommand")).unwrap_err();
         assert!(err.to_string().contains("failed"), "{err}");
-        assert!(run_capture(&mut Command::new("repos-manager-no-such-cli")).is_err());
+        assert!(run_capture(&mut Command::new("gnostr-dev-no-such-cli")).is_err());
     }
 
     #[test]
@@ -443,7 +443,7 @@ pub mod tests {
         run_interactive("git", &["--version"]).unwrap();
         let err = run_interactive("git", &["no-such-subcommand"]).unwrap_err();
         assert_eq!(err.to_string(), "git no-such-subcommand failed");
-        let err = run_interactive("repos-manager-no-such-cli", &[]).unwrap_err();
+        let err = run_interactive("gnostr-dev-no-such-cli", &[]).unwrap_err();
         assert!(err.to_string().contains("is it installed"), "{err}");
     }
 
