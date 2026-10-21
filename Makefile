@@ -1,6 +1,6 @@
 PREFIX ?= $(HOME)/.local
 # The Cargo package is called gnostr-dev - crates.io has a crate named
-# gnostr-dev, which the dependency list needs, so the package cannot be
+# repos-manager, which the dependency list needs, so the package cannot be
 # called that - and cargo therefore writes the binary under that name. The
 # command installs as gnostr-dev: that is the name the tool prints, the
 # name of its config directory and the name its releases are published
@@ -26,8 +26,30 @@ test:
 	cargo test --locked
 
 # Needs cargo-llvm-cov: cargo install cargo-llvm-cov
+# cargo-llvm-cov also needs the LLVM tools (llvm-cov, llvm-profdata). They are
+# provided by rustup's llvm-tools-preview component, or by a system LLVM such
+# as Homebrew's. Detect them here so `make coverage` works without the user
+# having to export LLVM_COV/LLVM_PROFDATA by hand.
+LLVM_COV ?= $(shell command -v llvm-cov 2>/dev/null)
+LLVM_PROFDATA ?= $(shell command -v llvm-profdata 2>/dev/null)
+
+ifeq ($(LLVM_COV),)
+ifneq ($(wildcard /opt/homebrew/opt/llvm/bin/llvm-cov),)
+LLVM_COV := /opt/homebrew/opt/llvm/bin/llvm-cov
+LLVM_PROFDATA := /opt/homebrew/opt/llvm/bin/llvm-profdata
+endif
+endif
+
+ifeq ($(LLVM_COV),)
+ifneq ($(wildcard /usr/local/opt/llvm/bin/llvm-cov),)
+LLVM_COV := /usr/local/opt/llvm/bin/llvm-cov
+LLVM_PROFDATA := /usr/local/opt/llvm/bin/llvm-profdata
+endif
+endif
+
 coverage:
-	cargo llvm-cov --locked --summary-only
+	@command -v cargo >/dev/null || { echo "cargo not found: install Rust (https://rustup.rs) or use installers/install.sh"; exit 1; }
+	LLVM_COV="$(LLVM_COV)" LLVM_PROFDATA="$(LLVM_PROFDATA)" cargo llvm-cov --locked --summary-only
 
 lint:
 	cargo fmt --check
