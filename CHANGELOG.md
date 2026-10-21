@@ -13,6 +13,11 @@
 - A justfile with the commands of the repository: build, test, lint, install, completions, the crates.io manifest, and the local GitHub Actions runs with `act`
 - A CI workflow that builds, tests and lints on Linux and macOS, and checks the generated dependency list every night
 
+### Fixed
+
+- The Radicle provider listed its repositories with `rad ls --json`, a flag the `rad` CLI does not have: every sync ended in `unexpected argument '--json' found`. The table `rad ls` prints is read instead, and the owner of a repository comes from its identity document
+- The update check offered a release that carried no binary of this tool, and kept offering it after the check had failed. A release without a binary for this platform is not an update, and a version that cannot be confirmed is no longer advertised
+
 ## 1.1.1 (2026-10-12)
 
 ### Fixed
