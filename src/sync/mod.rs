@@ -64,7 +64,7 @@ pub struct HostLock {
 impl HostLock {
     pub fn acquire(dir: &Path) -> Result<Self> {
         fs::create_dir_all(dir)?;
-        let path = dir.join(".repos-manager.lock");
+        let path = dir.join(".gnostr-dev.lock");
         let mut file = File::options()
             .create(true)
             .truncate(false)

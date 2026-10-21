@@ -1,4 +1,4 @@
-//! Settings resolution: CLI flag > `REPOS_MANAGER_*` env var > config.json > defaults.
+//! Settings resolution: CLI flag > `GNOSTR_DEV_*` env var > config.json > defaults.
 
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
@@ -15,13 +15,16 @@ pub fn home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or_else(|| PathBuf::from("."))
 }
 
-/// Kept at `~/.config/repos-manager` on every OS so the documented path is the same everywhere.
+/// Kept at `~/.config/gnostr-dev` on every OS so the documented path is the same everywhere.
 pub fn app_config_dir() -> PathBuf {
-    home_dir().join(".config").join("repos-manager")
+    home_dir().join(".config").join("gnostr-dev")
 }
 
 pub fn config_path() -> PathBuf {
-    std::env::var_os("REPOS_MANAGER_CONFIG")
+    // GNOSTR_DEV_CONFIG wins; REPOS_MANAGER_CONFIG is still read for the
+    // setups that predate the rename.
+    std::env::var_os("GNOSTR_DEV_CONFIG")
+        .or_else(|| std::env::var_os("REPOS_MANAGER_CONFIG"))
         .map(PathBuf::from)
         .unwrap_or_else(|| app_config_dir().join("config.json"))
 }
@@ -125,6 +128,13 @@ impl Settings {
     /// `env` is injected so tests do not race on the process environment.
     pub fn load_from(path: &Path, env: impl Fn(&str) -> Option<String>) -> Result<Self> {
         let env_nonempty = |key: &str| env(key).filter(|v| !v.is_empty());
+        // The settings live in GNOSTR_DEV_* now; the older REPOS_MANAGER_*
+        // is still read, so the setups that predate the rename keep working.
+        let env_setting = |key: &str| {
+            env(&format!("GNOSTR_DEV_{key}"))
+                .or_else(|| env(&format!("REPOS_MANAGER_{key}")))
+                .filter(|v| !v.is_empty())
+        };
         let file: FileConfig = if path.is_file() {
             let raw = fs::read_to_string(path)
                 .with_context(|| format!("cannot read {}", output::path(path)))?;
@@ -135,20 +145,20 @@ impl Settings {
         };
 
         let confirm = confirm_settings(&file);
-        let base_dir = env_nonempty("REPOS_MANAGER_BASE_DIR")
+        let base_dir = env_setting("BASE_DIR")
             .or(file.base_dir)
             .map(|s| expand_tilde(&s))
             .unwrap_or_else(|| home_dir().join("Documents"));
 
-        let parallel = env_nonempty("REPOS_MANAGER_PARALLEL")
+        let parallel = env_setting("PARALLEL")
             .and_then(|v| v.parse().ok())
             .or(file.parallel)
             .unwrap_or(4);
 
-        let protocol = env_nonempty("REPOS_MANAGER_PROTOCOL").or(file.protocol);
+        let protocol = env_setting("PROTOCOL").or(file.protocol);
         let use_https = protocol.as_deref() == Some("https");
 
-        let check_updates = env_nonempty("REPOS_MANAGER_NO_UPDATE_CHECK").as_deref() != Some("1")
+        let check_updates = env_setting("NO_UPDATE_CHECK").as_deref() != Some("1")
             && file.check_updates.unwrap_or(true);
 
         let any: BTreeMap<String, AnyHost> = file

@@ -95,22 +95,10 @@ jobs:
         run: command -v curl jq
       - name: Refresh the dependency list
         run: |
+          flags=$(grep -v '^[[:space:]]*#' scripts/crates-flags | tr '\n' ' ')
           ok=0
           for attempt in 1 2 3; do
-            if scripts/update-crates.sh \
-              --exclude radicle-ed25519-compact --exclude radicle-uri --exclude rad-uri \
-              --exclude radicle-backup --exclude radicle-keystore --exclude gitorii \
-              --exclude radicle-httpd --exclude git-commit --exclude radicle-feed \
-              --exclude radicle-tui \
-              --optional radicle-native-ci --optional radicle-ci-adapter \
-              --optional radicle-ci-ambient --optional radicle-ci-broker \
-              --optional radicle-job --optional radicle-source \
-              --linux-only syd \
-              --linux-only rcp-tools-common --linux-only rcp-tools-filegen \
-              --linux-only rcp-tools-rchm --linux-only rcp-tools-rcmp \
-              --linux-only rcp-tools-rcp --linux-only rcp-tools-remote \
-              --linux-only rcp-tools-rlink --linux-only rcp-tools-rrm
-            then
+            if scripts/update-crates.sh $flags; then
               ok=1
               break
             fi

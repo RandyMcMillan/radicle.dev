@@ -411,7 +411,7 @@ fn host_block(row: &HostRow, rules: Rules<'_>) -> Vec<String> {
 /// `ignore` lists only, never an invented `only`, so it cannot empty the scope.
 pub fn ignore_file(plan: &Plan, filter: &RepoFilter, today: &str) -> String {
     let mut lines = vec![
-        format!("# Written by repos-manager on {today}."),
+        format!("# Written by gnostr-dev on {today}."),
         "# Uncomment a repository to stop syncing it. Sizes are what the forge reports."
             .to_string(),
     ];
@@ -743,7 +743,7 @@ git.example.org  3 in scope, 1 cloned, 2 new (?)
         assert_eq!(
             ignore_file(&plan, &rules(dir.path(), None), "2026-10-11"),
             "\
-# Written by repos-manager on 2026-10-11.
+# Written by gnostr-dev on 2026-10-11.
 # Uncomment a repository to stop syncing it. Sizes are what the forge reports.
 
 hosts:
@@ -784,7 +784,7 @@ hosts:
         assert_eq!(
             ignore_file(&plan, &rules(dir.path(), Some(existing)), "2026-10-11"),
             "\
-# Written by repos-manager on 2026-10-11.
+# Written by gnostr-dev on 2026-10-11.
 # Uncomment a repository to stop syncing it. Sizes are what the forge reports.
 
 only:

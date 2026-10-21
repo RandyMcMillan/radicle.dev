@@ -1,5 +1,5 @@
 //! OneDev has no official CLI: this provider pages through the REST API under
-//! `/~api` with a token saved by `repos-manager onedev login`. OneDev is
+//! `/~api` with a token saved by `gnostr-dev onedev login`. OneDev is
 //! self-hosted only, so credentials are stored per host.
 
 use std::fs;
@@ -160,7 +160,7 @@ pub fn list_repos(host: &str) -> Result<Listing, ListError> {
     let raw = fs::read_to_string(creds_path()).unwrap_or_default();
     let Some((base, user, token)) = creds_for_host(&raw, host) else {
         return Err(ListError::Skip(format!(
-            "no credentials for host '{host}'. Run: repos-manager onedev login"
+            "no credentials for host '{host}'. Run: gnostr-dev onedev login"
         )));
     };
     Ok(list_from_api(&base, host, &user, &token)?)

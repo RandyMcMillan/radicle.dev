@@ -82,14 +82,14 @@ fn run(cli: Cli) -> Result<()> {
     // Commands that need neither config nor git.
     match &command {
         Command::Version => {
-            println!("repos-manager {}", update::CURRENT);
+            println!("gnostr-dev {}", update::CURRENT);
             return Ok(());
         }
         Command::Completions { shell } => {
             clap_complete::generate(
                 *shell,
                 &mut Cli::command(),
-                "repos-manager",
+                "gnostr-dev",
                 &mut std::io::stdout(),
             );
             return Ok(());
@@ -117,7 +117,7 @@ fn run(cli: Cli) -> Result<()> {
         Command::Sync(args) => {
             if args.sync.host.is_some() {
                 bail!(
-                    "--host targets a single provider, use: repos-manager <provider> sync --host <host>"
+                    "--host targets a single provider, use: gnostr-dev <provider> sync --host <host>"
                 );
             }
             let opts = apply_sync(&mut settings, &args.sync);

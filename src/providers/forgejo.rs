@@ -1,6 +1,6 @@
 //! Forgejo / Gitea / Gogs. `tea` is only used for `login add`: `tea repo list`
 //! does not enumerate organizations, so listing reads the token from tea's
-//! config (or from the creds file written by `repos-manager forgejo login`)
+//! config (or from the creds file written by `gnostr-dev forgejo login`)
 //! and pages through the REST API directly.
 
 use std::ffi::OsString;
@@ -173,7 +173,7 @@ fn creds_lookup(
     {
         return Ok(creds);
     }
-    let how = "Run: tea login add, or repos-manager forgejo login";
+    let how = "Run: tea login add, or gnostr-dev forgejo login";
     // The "tea config not found" wording is asserted by the CLI tests.
     Err(ListError::Skip(match tea_config {
         None => format!("tea config not found and no saved credentials for '{host}'. {how}"),

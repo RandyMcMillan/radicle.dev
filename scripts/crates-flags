@@ -1,0 +1,41 @@
+# The flags that reproduce the crates.io dependency list in Cargo.toml.
+#
+#   scripts/update-crates.sh $(grep -v '^[[:space:]]*#' scripts/crates-flags | tr '\n' ' ')
+#
+# The .justfile, the CI job in .github/workflows/radicle-dev.yml and the
+# command in scripts/README.md all read this file, so the list lives in one
+# place. Lines that start with a # are comments and are filtered out.
+
+# These cannot be resolved next to the rest of the tree, so they are left
+# out. Cargo resolves optional dependencies as well, which is why they
+# cannot be feature guarded either.
+--exclude radicle-ed25519-compact
+--exclude radicle-uri
+--exclude rad-uri
+--exclude radicle-backup
+--exclude radicle-keystore
+--exclude gitorii
+--exclude radicle-httpd
+--exclude git-commit
+--exclude radicle-feed
+--exclude radicle-tui
+
+# These resolve but do not compile next to the rest of the tree. They are
+# written as optional dependencies, behind a feature of the same name.
+--optional radicle-native-ci
+--optional radicle-ci-adapter
+--optional radicle-ci-ambient
+--optional radicle-ci-broker
+--optional radicle-job
+--optional radicle-source
+
+# These only build on Linux.
+--linux-only syd
+--linux-only rcp-tools-common
+--linux-only rcp-tools-filegen
+--linux-only rcp-tools-rchm
+--linux-only rcp-tools-rcmp
+--linux-only rcp-tools-rcp
+--linux-only rcp-tools-remote
+--linux-only rcp-tools-rlink
+--linux-only rcp-tools-rrm

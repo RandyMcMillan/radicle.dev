@@ -8,12 +8,12 @@ use crate::update::REFRESH_ARG;
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "repos-manager",
-    bin_name = "repos-manager",
+    name = "gnostr-dev",
+    bin_name = "gnostr-dev",
     version,
     about = "Multi-provider Git repository manager",
     long_about = "Multi-provider Git repository manager.\n\nClone and update every repository you can access on GitHub, GitLab, Forgejo/Gitea, Bitbucket and Radicle into <base-dir>/<host>/<owner>/<repo>.",
-    after_help = "Config: ~/.config/repos-manager/config.json\n\nExamples:\n  repos-manager init\n  repos-manager login\n  repos-manager github sync\n  repos-manager sync --all --parallel 8\n  repos-manager status"
+    after_help = "Config: ~/.config/gnostr-dev/config.json\n\nExamples:\n  gnostr-dev init\n  gnostr-dev login\n  gnostr-dev github sync\n  gnostr-dev sync --all --parallel 8\n  gnostr-dev status"
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -184,7 +184,7 @@ mod tests {
     use clap::CommandFactory;
 
     fn parse(args: &[&str]) -> Result<Cli, clap::Error> {
-        Cli::try_parse_from(std::iter::once("repos-manager").chain(args.iter().copied()))
+        Cli::try_parse_from(std::iter::once("gnostr-dev").chain(args.iter().copied()))
     }
 
     #[test]

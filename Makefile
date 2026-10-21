@@ -1,12 +1,22 @@
 PREFIX ?= $(HOME)/.local
-BIN    := target/release/repos-manager
+# The Cargo package is called gnostr-dev - crates.io has a crate named
+# gnostr-dev, which the dependency list needs, so the package cannot be
+# called that - and cargo therefore writes the binary under that name. The
+# command installs as gnostr-dev: that is the name the tool prints, the
+# name of its config directory and the name its releases are published
+# under.
+NAME   := gnostr-dev
 # python3 everywhere but Windows, where it is a Microsoft Store stub that
 # exits non-zero instead of running anything.
 PYTHON ?= $(shell python3 -c "" >/dev/null 2>&1 && echo python3 || echo python)
+# cargo can write the build output somewhere else (build.target-dir), so ask
+# it where the binary ends up instead of guessing.
+TARGET_DIR := $(shell cargo metadata --format-version 1 --no-deps 2>/dev/null | $(PYTHON) -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])' 2>/dev/null)
+BIN    := $(if $(TARGET_DIR),$(TARGET_DIR)/release/gnostr-dev,target/release/gnostr-dev)
 
-BASH_COMP := $(HOME)/.local/share/bash-completion/completions/repos-manager
-ZSH_COMP  := $(HOME)/.local/share/zsh/site-functions/_repos-manager
-FISH_COMP := $(HOME)/.config/fish/completions/repos-manager.fish
+BASH_COMP := $(HOME)/.local/share/bash-completion/completions/gnostr-dev
+ZSH_COMP  := $(HOME)/.local/share/zsh/site-functions/_gnostr-dev
+FISH_COMP := $(HOME)/.config/fish/completions/gnostr-dev.fish
 
 build:
 	@command -v cargo >/dev/null || { echo "cargo not found: install Rust (https://rustup.rs) or use installers/install.sh"; exit 1; }
@@ -36,10 +46,11 @@ mutants:
 	cargo mutants --file src/sync/mod.rs --file src/sync/paths.rs --file src/sync/jobs.rs --file src/sync/prune.rs --file src/git.rs -j 2 --timeout-multiplier 5
 
 install: build
-	install -Dm755 $(BIN) $(DESTDIR)$(PREFIX)/bin/repos-manager
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -m755 $(BIN) $(DESTDIR)$(PREFIX)/bin/$(NAME)
 
 uninstall: uninstall-completions
-	rm -f $(DESTDIR)$(PREFIX)/bin/repos-manager
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(NAME)
 
 completions: build
 	install -d $(dir $(BASH_COMP)) $(dir $(ZSH_COMP)) $(dir $(FISH_COMP))

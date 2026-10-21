@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use ureq::Agent;
 
-pub const USER_AGENT: &str = concat!("repos-manager/", env!("CARGO_PKG_VERSION"));
+pub const USER_AGENT: &str = concat!("gnostr-dev/", env!("CARGO_PKG_VERSION"));
 
 pub fn agent(timeout: Duration) -> Agent {
     Agent::config_builder()

@@ -1,6 +1,6 @@
 //! Providers list remote repos by driving their official CLI (gh, glab, tea,
 //! bitbucket, rad, hut). Forgejo, Bitbucket and OneDev call the HTTP API with
-//! a token the CLI stored, or one `repos-manager <provider> login` saved. The
+//! a token the CLI stored, or one `gnostr-dev <provider> login` saved. The
 //! `any` provider has no API at all: it reads URLs from the config, or asks a
 //! plain git server over SSH.
 

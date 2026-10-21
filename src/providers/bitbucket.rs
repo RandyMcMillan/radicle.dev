@@ -1,5 +1,5 @@
 //! Bitbucket: uses the `bitbucket` CLI when installed on Cloud, otherwise the
-//! REST API with a token saved by `repos-manager bitbucket login`. Cloud goes
+//! REST API with a token saved by `gnostr-dev bitbucket login`. Cloud goes
 //! through the 2.0 API with an Atlassian API token (app passwords were removed
 //! on 2026-07-28), Data Center through the 1.0 API with an HTTP access token.
 
@@ -78,7 +78,7 @@ fn creds_for_host(host: &str) -> Option<Creds> {
     if legacy {
         output::warn(
             "bitbucket-creds holds an app password, which no longer works. \
-             Run: repos-manager bitbucket login",
+             Run: gnostr-dev bitbucket login",
         );
     }
     map.get(host).cloned()
@@ -249,7 +249,7 @@ pub fn list_repos(host: &str) -> Result<Listing, ListError> {
 
     let Some(creds) = creds_for_host(host) else {
         return Err(ListError::Skip(format!(
-            "no credentials for '{host}'. Run: repos-manager bitbucket login"
+            "no credentials for '{host}'. Run: gnostr-dev bitbucket login"
         )));
     };
     if host == CLOUD_HOST {
