@@ -22,11 +22,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Each file holds the version once, in this shape.
+# Each file holds the version once, in this shape. A file that is not in this
+# checkout - the documentation site is a repository of its own - is skipped
+# instead of failing the release.
 VERSION_FILES = (
     ("Cargo.toml", r'^version = ".*"', 'version = "{v}"'),
     ("site/src/_data/site.json", r'"version": ".*"', '"version": "{v}"'),
-    ("repos-manager.sh", r'^VERSION=".*"', 'VERSION="{v}"'),
+    ("gnostr-dev.sh", r'^VERSION=".*"', 'VERSION="{v}"'),
 )
 CHANGELOG = "CHANGELOG.md"
 UNRELEASED = "^## Unreleased"
@@ -67,6 +69,11 @@ def identity() -> tuple[str, str]:
     return name, email
 
 
+def version_files() -> list[tuple[str, str, str]]:
+    """The version files that this checkout holds."""
+    return [f for f in VERSION_FILES if (ROOT / f[0]).is_file()]
+
+
 def check(version: str) -> None:
     """Everything that must hold before a single file is touched."""
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
@@ -78,7 +85,7 @@ def check(version: str) -> None:
     changelog = (ROOT / CHANGELOG).read_text(encoding="utf-8")
     if not re.search(UNRELEASED, changelog, re.M):
         sys.exit(f"{CHANGELOG} has no '## Unreleased' section")
-    for name, pattern, _ in VERSION_FILES:
+    for name, pattern, _ in version_files():
         text = (ROOT / name).read_text(encoding="utf-8")
         if len(re.findall(pattern, text, re.M)) != 1:
             sys.exit(f"{name}: expected exactly one {pattern!r}")
@@ -86,7 +93,7 @@ def check(version: str) -> None:
 
 def rewrite(version: str) -> list[str]:
     """Set the version everywhere and date the changelog. Returns the files."""
-    edits = [(n, p, r.format(v=version)) for n, p, r in VERSION_FILES]
+    edits = [(n, p, r.format(v=version)) for n, p, r in version_files()]
     edits.append((CHANGELOG, UNRELEASED, f"## {version} ({date.today().isoformat()})"))
     for name, pattern, replacement in edits:
         path = ROOT / name
