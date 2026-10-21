@@ -1,0 +1,3 @@
+# Required by rcp-tools-remote (tokio_unstable features)
+[build]
+rustflags = ["--cfg", "tokio_unstable"]
