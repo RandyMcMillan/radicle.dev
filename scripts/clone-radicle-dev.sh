@@ -10,6 +10,9 @@
 # Pass --github to clone the GitHub mirrors instead, i.e. every repository
 # listed at https://github.com/orgs/radicle-dev/repositories.
 #
+# The clone is the upstream repository, so its "origin" remote is renamed to
+# "upstream", leaving "origin" free for a fork.
+#
 # Usage:
 #   scripts/clone-radicle-dev.sh [options] [destination]
 #
@@ -235,7 +238,14 @@ while IFS=$'\t' read -r name url; do
     printf '  clone   %-28s %s\n' "$name" "$url"
     # shellcheck disable=SC2086 # clone_args is intentionally split into words
     if git clone $clone_args --quiet "$url" "$target"; then
-        cloned=$((cloned + 1))
+        # The clone is the upstream repository, so name the remote accordingly
+        # and leave "origin" free for a fork.
+        if git -C "$target" remote rename origin upstream; then
+            cloned=$((cloned + 1))
+        else
+            printf '  failed  %s (could not rename origin to upstream)\n' "$name" >&2
+            failed=$((failed + 1))
+        fi
     else
         printf '  failed  %s (%s)\n' "$name" "$url" >&2
         failed=$((failed + 1))

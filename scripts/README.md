@@ -54,3 +54,13 @@ scripts/clone-radicle-dev.sh --github --dry-run
 
 Existing directories are never touched; a repository that has already been
 cloned is skipped.
+
+The cloned repository is the upstream one, so its `origin` remote is renamed to
+`upstream` right after the clone. This leaves `origin` free to be pointed at a
+fork:
+
+```sh
+cd radicle-dev/heartwood
+git remote add origin git@github.com:<you>/heartwood.git
+git push -u origin main
+```
