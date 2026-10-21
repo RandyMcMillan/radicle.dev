@@ -90,7 +90,7 @@ cargo install --path .
 
 <br>
 
-The upstream project publishes prebuilt binaries for every platform on its [GitHub releases page](https://github.com/Dxsk/repos-manager/releases), which has every platform. The [Forgejo releases](https://forge.infrasouveraine.fr/dxsk/repos-manager/releases) carry the Linux and Windows x86_64 builds. They are built from the upstream source, so they install a command called `repos-manager`, not `gnostr-dev`.
+The upstream project publishes prebuilt binaries for every platform on its [GitHub releases page](https://github.com/Dxsk/repos-manager/releases). The [Forgejo releases](https://forge.infrasouveraine.fr/dxsk/repos-manager/releases) carry the Linux and Windows x86_64 builds. They are built from the upstream source, so they install a command called `repos-manager`, not `gnostr-dev`.
 
 <details open>
 <summary><b>Package managers</b></summary>
