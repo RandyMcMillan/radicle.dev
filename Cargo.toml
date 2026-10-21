@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# Dependencies parsed from https://crates.io/search?q=radicle by
-# scripts/update-crates.sh. The crates that cannot be used together with the
-# rest are listed, commented out, at the end of this section.
+# Dependencies parsed from https://crates.io/search?q=radicle (110 crates) by
+# scripts/update-crates.sh. The 16 crates that cannot be used together with
+# the rest are listed, commented out, at the end of this section.
 
 ambient-ci = "0.21.1"
 dpc-tau = "0.2.1"
@@ -94,9 +94,6 @@ uli-types = "0.0.1"
 uli-wallet = "0.0.1"
 uli-zk = "0.0.1"
 
-# Dependencies parsed from https://crates.io/search?q=radicle (110 crates).
-# 10 of them cannot coexist with the versions below and are listed, commented
-# out, at the end of this section with the reason they were excluded.
 # Excluded from the search results because they conflict with the crates
 # above. Uncommenting any of them breaks `cargo generate-lockfile`.
 # radicle-ed25519-compact = "2.0.3" # only published version is yanked
@@ -111,6 +108,9 @@ uli-zk = "0.0.1"
 # radicle-tui = "0.7.0"              # libgit2-sys links git2, clashes with radicle
 # radicle-native-ci = "0.14.0"       # pulls radicle 0.22 -> radicle-crypto 0.16,
 #                                    # which does not compile against cyphergraphy 0.3.1
+# The next four require radicle 0.24, whose radicle-cob 0.20.0 uses git2 0.20
+# while radicle-oid 0.2.2 (needed by radicle-cob 0.21.1) uses git2 0.21, so the
+# two cannot be linked into the same build.
 # radicle-ci-adapter = "0.1.1"
 # radicle-ci-ambient = "0.23.0"
 # radicle-ci-broker = "0.32.1"
