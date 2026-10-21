@@ -1,4 +1,4 @@
-name: radicle-dev
+name: gnostr-dev
 
 on:
   push:
@@ -78,7 +78,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends shellcheck
-          shellcheck scripts/*.sh installers/install.sh
+          shellcheck scripts/*.sh installers/install.sh gnostr-dev.sh
       - name: Compile the python scripts
         run: python3 -m compileall -q scripts
 
@@ -95,10 +95,10 @@ jobs:
         run: command -v curl jq
       - name: Refresh the dependency list
         run: |
-          flags=$(grep -v '^[[:space:]]*#' scripts/crates-flags | tr '\n' ' ')
+          mapfile -t flags < <(grep -v '^[[:space:]]*#' scripts/crates-flags | grep -v '^[[:space:]]*$')
           ok=0
           for attempt in 1 2 3; do
-            if scripts/update-crates.sh $flags; then
+            if scripts/update-crates.sh "${flags[@]}"; then
               ok=1
               break
             fi
