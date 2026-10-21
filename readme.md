@@ -605,7 +605,7 @@ From a source checkout, `make completions` installs the bash, zsh and fish files
 Commands that touch repositories print a one-line banner when a newer release is out:
 
 ```
-⬆ gnostr-dev 1.1.0 available (current 1.0.0), run: gnostr-dev update
+⬆ gnostr-dev 0.2.0 available (current 0.1.0), run: gnostr-dev update
 ```
 
 The banner reads a cached version, refreshed at most once a day by a detached background process that queries the GitHub Releases API, so the check never slows down the command in progress. Turn it off with `"check_updates": false`, or with `GNOSTR_DEV_NO_UPDATE_CHECK=1` for a single run.
@@ -621,7 +621,7 @@ Installed through a package manager (AUR, `cargo install`, and later Homebrew, S
 
 ### Upgrading from 0.x
 
-The 0.x tool was the upstream Bash script, called `repos-manager`. 1.0 was a breaking release of it: the Bash tool became a native binary, and the 0.x `repos-manager update` cannot install it. Your config file, `.repos-filter`, `.repos-ignore` and synced repositories are kept as they are (the two filter files are still read, see [Filtering](#filtering)).
+The 0.x tool was the upstream Bash script, called `repos-manager`. 1.0 was a breaking release of it: the Bash tool became a native binary, and the 0.x `repos-manager update` cannot install it. That is the upstream's history. This tool starts its own version line at 0.1.0, and carries the code of the upstream's 1.1.1. Your config file, `.repos-filter`, `.repos-ignore` and synced repositories are kept as they are (the two filter files are still read, see [Filtering](#filtering)).
 
 ```sh
 # 1. Remove the 0.x Bash install (make install put it here)
@@ -696,16 +696,16 @@ The same jobs run locally, in a container, with [act](https://github.com/nektos/
 2. Run the release script with the new version:
 
    ```sh
-   python scripts/release.py 1.1.0    # or: make release V=1.1.0
+   python scripts/release.py 0.2.0    # or: make release V=0.2.0
    ```
 
-   The working tree must be clean. It sets the version in `Cargo.toml`, `Cargo.lock` and `gnostr-dev.sh`, turns the `Unreleased` heading into `## 1.1.0 (date)`, then commits `chore: release v1.1.0` and creates the signed `v1.1.0` tag (`git tag -s`, so a GPG signing key is needed). Nothing is pushed yet, so you can still check the result.
+   The working tree must be clean. It sets the version in `Cargo.toml`, `Cargo.lock` and `gnostr-dev.sh`, turns the `Unreleased` heading into `## 0.2.0 (date)`, then commits `chore: release v0.2.0` and creates the signed `v0.2.0` tag (`git tag -s`, so a GPG signing key is needed). Nothing is pushed yet, so you can still check the result.
 
    `make release` just calls the script, so a checkout without `make` loses nothing. On Windows the signing key usually lives in the GnuPG keyring rather than the one Git Bash reads: `git config --global gpg.program` has to point at `gpg.exe` for the tag to sign.
 3. Push the branch and the tag:
 
    ```sh
-   git push origin main v1.1.0
+   git push origin main v0.2.0
    ```
 
    The tag starts the release workflow: it builds the archives, attaches them to the release with their checksums, and that release is what `gnostr-dev update` finds.
