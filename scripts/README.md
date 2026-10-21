@@ -130,24 +130,21 @@ survive an update.
 | Linux only | 9 | `[target.'cfg(target_os = "linux")'.dependencies]` |
 | Excluded | 10 | commented out after the search results block |
 
-The command that reproduces the current manifest:
+The command that reproduces the current manifest is in `crates-flags`, next to this file. It is the single source of truth: the justfile, the CI job and this page all read it.
 
 ```sh
-scripts/update-crates.sh \
-  --exclude radicle-ed25519-compact --exclude radicle-uri --exclude rad-uri \
-  --exclude radicle-backup --exclude radicle-keystore --exclude gitorii \
-  --exclude radicle-httpd --exclude git-commit --exclude radicle-feed \
-  --exclude radicle-tui \
-  --optional radicle-native-ci --optional radicle-ci-adapter \
-  --optional radicle-ci-ambient --optional radicle-ci-broker --optional radicle-job \
-  --optional radicle-source \
-  --linux-only syd \
-  --linux-only rcp-tools-common --linux-only rcp-tools-filegen \
-  --linux-only rcp-tools-rchm --linux-only rcp-tools-rcmp --linux-only rcp-tools-rcp \
-  --linux-only rcp-tools-remote --linux-only rcp-tools-rlink --linux-only rcp-tools-rrm
+scripts/update-crates.sh $(grep -v '^[[:space:]]*#' scripts/crates-flags | tr '\n' ' ')
 ```
 
-The same command runs in CI: `.github/workflows/radicle-dev.yml` refreshes the
+The flags it holds:
+
+| Flag | Crates |
+| --- | --- |
+| `--exclude <name>` | 10 crates that cannot be resolved next to the rest |
+| `--optional <name>` | 6 crates that resolve but do not compile, so they are feature guarded |
+| `--linux-only <name>` | 9 crates that only build on Linux |
+
+The same command runs in CI: `.github/workflows/gnostr-dev.yml` refreshes the
 manifest every night and fails when the result differs from the committed
 `Cargo.toml`. That is the signal to run the command above and commit what it
 writes.

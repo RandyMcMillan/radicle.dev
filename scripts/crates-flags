@@ -2,7 +2,7 @@
 #
 #   scripts/update-crates.sh $(grep -v '^[[:space:]]*#' scripts/crates-flags | tr '\n' ' ')
 #
-# The .justfile, the CI job in .github/workflows/radicle-dev.yml and the
+# The .justfile, the CI job in .github/workflows/gnostr-dev.yml and the
 # command in scripts/README.md all read this file, so the list lives in one
 # place. Lines that start with a # are comments and are filtered out.
 
