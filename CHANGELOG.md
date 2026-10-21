@@ -7,11 +7,13 @@
 - The tool is called `gnostr-dev`. The command, the config directory (`~/.config/gnostr-dev`), the environment variables (`GNOSTR_DEV_*`), the lock file (`.gnostr-dev.lock`), the update cache (`<cache dir>/gnostr-dev/latest-version`), the user agent and the shell completions all carry the new name
 - The older names still work where they can: `REPOS_MANAGER_*` is still read next to `GNOSTR_DEV_*`, so the setups that predate the rename keep working
 - The self-update follows the releases of this repository, not the ones of the upstream project. An upstream release carries a binary that calls itself `repos-manager`, and installing it in place would have replaced `gnostr-dev` with a tool of another name
+- The package starts its own version line at `0.1.0`. The versions above are the upstream's: what is released here is the upstream's 1.1.1, renamed
 
 ### Added
 
 - A justfile with the commands of the repository: build, test, lint, install, completions, the crates.io manifest, and the local GitHub Actions runs with `act`
 - A CI workflow that builds, tests and lints on Linux and macOS, and checks the generated dependency list every night
+- A release workflow: a `v*` tag builds the binary for the six targets, attaches one archive per target to the release and publishes their `SHA256SUMS`. The archives are named `gnostr-dev-<target>`, which is what `gnostr-dev update` looks for
 
 ### Fixed
 
