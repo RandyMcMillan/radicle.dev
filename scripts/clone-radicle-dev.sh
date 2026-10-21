@@ -26,6 +26,9 @@
 #   --depth <n>     Create shallow clones with the given depth (default: 1).
 #                   Use 0 for the full history.
 #   --only <name>   Only clone the given repository; may be passed multiple times.
+#   --install-rad   Install the radicle binaries (rad, radicle-node and
+#                   git-remote-rad) with https://radicle.dev/install, before
+#                   cloning. Skipped if rad is already installed.
 #   --dry-run       Show what would be cloned without cloning anything.
 #   -h, --help      Show this help.
 #
@@ -33,6 +36,7 @@
 #   scripts/clone-radicle-dev.sh
 #   scripts/clone-radicle-dev.sh --github
 #   scripts/clone-radicle-dev.sh --github --dest ~/src/radicle-dev --depth 0
+#   scripts/clone-radicle-dev.sh --install-rad
 
 set -euo pipefail
 
@@ -47,6 +51,7 @@ depth="$DEFAULT_DEPTH"
 source_github="false"
 dry_run="false"
 only=""
+install_rad="false"
 
 usage() {
     awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
@@ -93,6 +98,9 @@ while [ $# -gt 0 ]; do
             ;;
         --dry-run)
             dry_run="true"
+            ;;
+        --install-rad)
+            install_rad="true"
             ;;
         -h|--help)
             usage
@@ -175,6 +183,57 @@ discover_radicle() {
 radicle_url() {
     printf '%s/%s' "$node" "$1"
 }
+
+# Install the radicle binaries (rad, radicle-node and git-remote-rad) using
+# the official installer, which downloads the signed release archive and
+# installs it under $HOME/.radicle.
+install_radicle() {
+    local installer prefix
+
+    if have rad; then
+        printf 'rad is already installed: %s\n' "$(rad --version 2>/dev/null | head -1)"
+        return 0
+    fi
+
+    # The installer installs into $RAD_HOME, defaulting to ~/.radicle.
+    prefix="${RAD_HOME:-$HOME/.radicle}"
+
+    have curl || die "curl is required to install rad"
+    have tar || die "tar is required to install rad"
+    have xz || die "xz is required to install rad"
+    have ssh-keygen || die "ssh-keygen is required to install rad"
+
+    installer=$(mktemp "${TMPDIR:-/tmp}/radicle-install.XXXXXX") ||
+        die "could not create a temporary file"
+
+    if ! curl -sSfL "https://radicle.dev/install" -o "$installer"; then
+        rm -f "$installer"
+        die "could not download the radicle installer"
+    fi
+
+    if ! sh "$installer"; then
+        rm -f "$installer"
+        die "the radicle installer failed"
+    fi
+
+    rm -f "$installer"
+
+    printf 'installed rad: %s\n' "$("$prefix/bin/rad" --version 2>/dev/null | head -1)"
+    printf 'add %s to your PATH to use it\n' "$prefix/bin"
+}
+
+if [ "$install_rad" = "true" ]; then
+    if [ "$dry_run" = "true" ]; then
+        if have rad; then
+            printf 'rad is already installed: %s\n' "$(rad --version 2>/dev/null | head -1)"
+        else
+            printf 'would install the radicle binaries with https://radicle.dev/install\n'
+        fi
+    else
+        install_radicle
+    fi
+    printf '\n'
+fi
 
 if [ "$source_github" = "true" ]; then
     echo "Cloning the repositories of ${ORG} from GitHub"
