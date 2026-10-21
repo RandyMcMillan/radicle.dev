@@ -103,7 +103,10 @@ def rewrite(version: str) -> list[str]:
         if n != 1:
             sys.exit(f"{name}: {pattern!r} matched {n} times")
         # newline="\n" because .gitattributes keeps this tree LF on every OS.
-        path.write_text(text, encoding="utf-8", newline="\n")
+        # Path.write_text only grew a newline argument in Python 3.10, so the
+        # file is opened here instead: the script runs on 3.9 as well.
+        with path.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
         print(f"  {name}")
     return [name for name, _, _ in edits]
 
