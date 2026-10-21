@@ -81,8 +81,18 @@ shellcheck:
 python-check:
     python3 -m compileall -q scripts
 
+# Check the workflow files. Needs actionlint.
+workflows:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v actionlint >/dev/null 2>&1; then
+      echo "actionlint is not installed, nothing to check"
+      exit 0
+    fi
+    actionlint .github/workflows/*.yml
+
 # What CI runs on a pull request.
-lint: fmt-check clippy shellcheck python-check
+lint: fmt-check clippy shellcheck python-check workflows
 
 # Build, lint and test, the way CI does.
 ci: fmt-check clippy test
