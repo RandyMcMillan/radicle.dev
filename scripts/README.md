@@ -101,9 +101,17 @@ scripts/update-crates.sh [options]
 | `--dry-run` | Print the resolved dependencies, change nothing. |
 | `-h`, `--help` | Show the help. |
 
-The script replaces the dependency entries of the `[dependencies]` section, of the
-`[features]` section and of the Linux target section. Comments, blank lines and
-all other sections are left untouched, so the notes next to the dependencies
+The script rewrites the block of search results in the `[dependencies]`
+section, the entries of the `[features]` section and of the Linux target
+section. The block is delimited by two markers:
+
+```toml
+# >>> crates.io search results >>>
+# <<< crates.io search results <<<
+```
+
+Everything outside the markers is left untouched, so the dependencies of this
+package itself, the notes next to the dependencies and all other sections
 survive an update.
 
 ### Requirements
@@ -113,14 +121,14 @@ survive an update.
 ### The radicle manifest
 
 `Cargo.toml` in this repository holds every crate the `radicle` search returns
-— 110 of them:
+— 110 of them — next to the dependencies of this package itself:
 
 | | Crates | Where |
 | --- | --- | --- |
-| Plain dependencies | 85 | `[dependencies]` |
-| Feature guarded | 6 | `[dependencies]`, as optional dependencies |
+| Plain dependencies | 85 | the search results block of `[dependencies]` |
+| Feature guarded | 6 | the search results block, as optional dependencies |
 | Linux only | 9 | `[target.'cfg(target_os = "linux")'.dependencies]` |
-| Excluded | 10 | commented out at the end of `[dependencies]` |
+| Excluded | 10 | commented out after the search results block |
 
 The command that reproduces the current manifest:
 
