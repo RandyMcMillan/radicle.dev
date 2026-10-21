@@ -1,1 +1,5 @@
 /target
+CLAUDE.md
+/dist
+mutants.out/
+.claude/worktrees/

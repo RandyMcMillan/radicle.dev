@@ -1,18 +1,11 @@
 [package]
-name = "repos-manager"
-version = "1.1.1"
+name = "radicle-dev"
+version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
-description = "One CLI to sync them all: clone and update Git repos from GitHub, GitLab, Forgejo, Bitbucket, Sourcehut, OneDev, Radicle and plain git servers"
-license = "MIT"
-repository = "https://github.com/Dxsk/repos-manager"
-homepage = "https://repos-manager.dxscloud.fr"
-readme = "readme.md"
-keywords = ["git", "cli", "sync", "github", "gitlab"]
-categories = ["command-line-utilities", "development-tools"]
-include = ["/src", "/tests", "/Cargo.lock", "/LICENSE", "/readme.md", "/CHANGELOG.md"]
 
 [dependencies]
+
+# repos-manager
 anyhow = "1.0.104"
 base64 = "0.23.1"
 clap = { version = "4.6.7", features = ["derive", "env"] }
@@ -34,10 +27,139 @@ walkdir = "2.5.0"
 which = "8.0.6"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
+# Dependencies parsed from https://crates.io/search?q=radicle by
+# scripts/update-crates.sh. The crates that cannot be used together with the
+# rest are listed, commented out, at the end of this section.
+
+ambient-ci = "0.21.1"
+dpc-tau = "0.2.1"
+dpc-tau-config = "0.2.1"
+dpc-tau-core = "0.2.1"
+dpc-tau-ext-provider-builtin = "0.2.1"
+dpc-tau-ext-shell = "0.2.1"
+dpc-tau-ext-test-dummy = "0.2.1"
+dpc-tau-harness = "0.2.1"
+dpc-tau-harness-tools = "0.2.1"
+dpc-tau-provider = "0.2.1"
+dpc-tau-provider-chat-completions = "0.2.1"
+dpc-tau-provider-codex = "0.2.1"
+dpc-tau-provider-responses = "0.2.1"
+dpc-tau-session-inspect = "0.2.1"
+dpc-tau-socket = "0.2.1"
+dpc-tau-term-screen = "0.2.1"
+dpc-tau-test-support = "0.2.1"
+dpc-tau-themes = "0.2.0"
+dpc-tau-util-fs-err = "0.1.0"
+dpc-tau-vcr = "0.2.0"
+gitops-agent = "0.1.1"
+iroh-dpc-rpc = "0.1.1"
+konfik = "0.2.1"
+librad = "0.0.0"
+lnk-thrussh = "0.33.5"
+myn-grrs = "0.1.9"
+rad-ci = "0.11.0"
+rad2 = "0.0.0"
+radicle = "0.25.1"
+radicle-artifact = "0.23.1"
+radicle-artifact-client = "0.23.1"
+radicle-artifact-core = "0.23.1"
+radicle-artifact-node = "0.23.1"
+radicle-cli = "0.23.0"
+radicle-cli-test = "0.14.1"
+radicle-cob = "0.21.1"
+radicle-core = "0.4.1"
+radicle-crypto = "0.19.0"
+radicle-dag = "0.10.0"
+radicle-fetch = "0.21.1"
+radicle-git-ext = "0.13.0"
+radicle-git-metadata = "0.2.1"
+radicle-git-ref-format = "0.2.0"
+radicle-localtime = "0.1.0"
+radicle-log = "0.2.0"
+radicle-node = "0.21.1"
+radicle-oid = "0.2.2"
+radicle-protocol = "0.9.1"
+radicle-registry-client = "0.0.0"
+radicle-registry-node = "0.0.0"
+radicle-registry-runtime = "0.0.0"
+radicle-remote-helper = "0.18.1"
+radicle-schemars = "0.9.1"
+radicle-signals = "0.12.1"
+radicle-ssh = "0.10.0"
+radicle-std-ext = "0.2.0"
+radicle-surf = "0.29.0"
+radicle-systemd = "0.13.0"
+radicle-term = "0.19.1"
+radicle-windows = "0.1.0"
+raticle = "0.0.0"
+rcp-tools-congestion = "0.40.0"
+rcp-tools-throttle = "0.40.0"
+repos-manager = "1.1.1"
+shadow_counted = "0.7.0"
+uli = "0.0.1"
+uli-cli = "0.0.1"
+uli-client = "0.0.1"
+uli-codec = "0.0.1"
+uli-consensus = "0.0.1"
+uli-core = "0.0.1"
+uli-crypto = "0.0.1"
+uli-da = "0.0.1"
+uli-indexer = "0.0.1"
+uli-mempool = "0.0.1"
+uli-network = "0.0.1"
+uli-node = "0.0.1"
+uli-primitives = "0.0.1"
+uli-rpc = "0.0.1"
+uli-runtime = "0.0.1"
+uli-sdk = "0.0.1"
+uli-state = "0.0.1"
+uli-types = "0.0.1"
+uli-wallet = "0.0.1"
+uli-zk = "0.0.1"
+
+# Dependencies parsed from https://crates.io/search?q=radicle (110 crates).
+# 10 of them cannot coexist with the versions below and are listed, commented
+# out, at the end of this section with the reason they were excluded.
+# Excluded from the search results because they conflict with the crates
+# above. Uncommenting any of them breaks `cargo generate-lockfile`.
+# radicle-ed25519-compact = "2.0.3" # only published version is yanked
+# radicle-uri = "0.1.3"              # pins cyphergraphy =0.3.0, radicle needs ^0.3.1
+# rad-uri = "0.4.1"                  # depends on radicle-uri 0.1.0 (same conflict)
+# radicle-backup = "0.4.1"           # sqlite3-src links sqlite3, clashes with radicle
+# radicle-keystore = "0.2.0"         # chacha20poly1305 =0.9.0 needs zeroize <1.5
+# gitorii = "0.16.1"                 # needs an older clap than the one selected
+# radicle-httpd = "0.10.0"           # needs an older cc than the one selected
+# git-commit = "0.3.0"               # libgit2-sys links git2, clashes with radicle
+# radicle-feed = "0.5.3"             # libgit2-sys links git2, clashes with radicle
+# radicle-tui = "0.7.0"              # libgit2-sys links git2, clashes with radicle
+# radicle-native-ci = "0.14.0"       # pulls radicle 0.22 -> radicle-crypto 0.16,
+#                                    # which does not compile against cyphergraphy 0.3.1
+# radicle-ci-adapter = "0.1.1"
+# radicle-ci-ambient = "0.23.0"
+# radicle-ci-broker = "0.32.1"
+# radicle-job = "0.6.0"
+# radicle-source = "0.4.0"          # pulls radicle-surf 0.8, which does not
+#                                    # compile against git2 0.21
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# syd >= 3.24 pulls in hardened-malloc (needs glibc headers); 3.24-3.59 are all
+# yanked and older versions need the yanked mimalloc2-rust. Linux only.
+# The rcp-tools family depends on `procfs`, which only builds on Linux.
+rcp-tools-common = "0.40.0"
+rcp-tools-filegen = "0.40.0"
+rcp-tools-rchm = "0.40.0"
+rcp-tools-rcmp = "0.40.0"
+rcp-tools-rcp = "0.40.0"
+rcp-tools-remote = "0.40.0"
+rcp-tools-rlink = "0.40.0"
+rcp-tools-rrm = "0.40.0"
+syd = "3.59.0"
+
 [dev-dependencies]
 proptest = "1.11.0"
 tempfile = "3.27.0"
 
+# repos-manager
 [profile.release]
 lto = true
 codegen-units = 1
