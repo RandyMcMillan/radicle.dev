@@ -44,11 +44,14 @@ jobs:
           fi
           # Only the highest version is marked "latest", which is what
           # releases/latest (the self-updater) resolves to. Without this, an
-          # older tag rebuilt later would take over.
-          highest=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          # older tag rebuilt later would take over. The candidates are the
+          # releases of this repository: the tags it inherited from the
+          # upstream history belong to another project, with a version line
+          # of their own.
+          highest=$(gh release list --limit 100 --json tagName --jq '.[].tagName' | sort -V | tail -1)
           latest=false
           [ "$highest" = "$TAG" ] && latest=true
-          echo "Highest tag is $highest, latest=$latest"
+          echo "Highest release is $highest, latest=$latest"
           gh release create "$TAG" --generate-notes --verify-tag --latest="$latest"
 
   build:
