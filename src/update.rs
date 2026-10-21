@@ -182,12 +182,38 @@ pub fn refresh_cache() -> Result<()> {
 }
 
 fn refresh_cache_to(url: &str, path: &Path) -> Result<()> {
-    let release = fetch_release(url, Duration::from_secs(5))?;
+    let release = match fetch_release(url, Duration::from_secs(5)) {
+        Ok(release) => release,
+        Err(e) => {
+            // Nothing could be learned about the latest release. A version
+            // left in the cache would be advertised for as long as it stays
+            // there, so it goes.
+            let _ = fs::remove_file(path);
+            return Err(e);
+        }
+    };
+
+    // A release that carries no binary for this platform is not an update
+    // for this tool: it belongs to another program. Advertising it would
+    // offer an update that cannot be installed.
+    if !carries_binary(&release) {
+        let _ = fs::remove_file(path);
+        return Ok(());
+    }
+
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)?;
     }
     fs::write(path, release.tag_name.trim_start_matches('v'))?;
     Ok(())
+}
+
+/// Whether a release carries a binary of this tool for this platform.
+fn carries_binary(release: &Release) -> bool {
+    let Ok(asset) = asset_name() else {
+        return false;
+    };
+    release.assets.iter().any(|a| a.name == asset)
 }
 
 /// GitHub release asset for a platform. Windows always maps to the MSVC
@@ -312,11 +338,15 @@ pub fn self_update(assume_yes: bool) -> Result<()> {
         "New version available: {} (current: {CURRENT})",
         output::green(latest)
     ));
+    let asset = asset_name()?;
+    if !release.assets.iter().any(|a| a.name == asset) {
+        bail!("release {latest} carries no {asset} binary");
+    }
     if !assume_yes && !confirm("Update now?")? {
         return Ok(());
     }
 
-    let binary = verified_binary(&release, &asset_name()?, download)?;
+    let binary = verified_binary(&release, &asset, download)?;
     let tmp = std::env::temp_dir().join(format!("gnostr-dev-update-{}", std::process::id()));
     fs::write(&tmp, &binary)?;
     #[cfg(unix)]
@@ -501,10 +531,21 @@ mod tests {
         refresh_async(&settings);
     }
 
+    /// A release as the API returns it, with the given assets.
+    fn release_json(tag: &str, assets: &[&str]) -> String {
+        let assets: Vec<String> = assets
+            .iter()
+            .map(|n| format!(r#"{{"name":"{n}","browser_download_url":"mem://{n}"}}"#))
+            .collect();
+        format!(r#"{{"tag_name":"{tag}","assets":[{}]}}"#, assets.join(","))
+    }
+
     #[test]
     fn refresh_writes_cache_without_v_prefix() {
-        let server = Server::start(|target| match target {
-            "/latest" => Response::json(r#"{"tag_name":"v9.9.9"}"#),
+        let asset = asset_name().unwrap();
+        let body = release_json("v9.9.9", &[&asset]);
+        let server = Server::start(move |target| match target {
+            "/latest" => Response::json(&body),
             _ => Response::not_found(),
         });
         let tmp = tempfile::tempdir().unwrap();
@@ -512,7 +553,33 @@ mod tests {
         refresh_cache_to(&format!("{}/latest", server.url), &path).unwrap();
         assert_eq!(fs::read_to_string(&path).unwrap(), "9.9.9");
         assert!(server.requests()[0].contains("application/vnd.github+json"));
-        assert!(refresh_cache_to(&format!("{}/missing", server.url), &path).is_err());
+    }
+
+    #[test]
+    fn a_release_without_a_binary_is_not_an_update() {
+        // A release of another program: its version is not ours to offer.
+        let body = release_json(
+            "v9.9.9",
+            &["some-other-tool-x86_64-unknown-linux-musl.tar.gz"],
+        );
+        let server = Server::start(move |_| Response::json(&body));
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("cache").join("latest-version");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, "1.0.0").unwrap();
+        refresh_cache_to(&server.url, &path).unwrap();
+        assert!(!path.exists(), "the stale version is still advertised");
+    }
+
+    #[test]
+    fn a_failed_refresh_drops_the_stale_version() {
+        let server = Server::start(|_| Response::not_found());
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("cache").join("latest-version");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, "1.0.0").unwrap();
+        assert!(refresh_cache_to(&server.url, &path).is_err());
+        assert!(!path.exists(), "the stale version is still advertised");
     }
 
     #[test]
