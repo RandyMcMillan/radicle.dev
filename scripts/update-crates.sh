@@ -19,6 +19,7 @@ DRY_RUN=0
 PER_PAGE=100
 EXCLUDE=()
 LINUX_ONLY=()
+OPTIONAL=()
 
 # crates.io requires a User-Agent on every request.
 USER_AGENT="radicle-dev-update-crates (https://github.com/radicle-dev)"
@@ -36,6 +37,10 @@ Options:
       --exclude <name>   skip a crate; repeatable
       --linux-only <name>
                           put a crate in the Linux target section; repeatable
+      --optional <name>
+                          feature guard a crate; repeatable. The crate is
+                          written as an optional dependency and gets a feature
+                          of the same name that enables it.
       --dry-run          print the resolved dependencies, change nothing
   -h, --help             show this help
 
@@ -54,6 +59,8 @@ while [ $# -gt 0 ]; do
             EXCLUDE+=("${2:?--exclude needs a value}"); shift 2 ;;
         --linux-only)
             LINUX_ONLY+=("${2:?--linux-only needs a value}"); shift 2 ;;
+        --optional)
+            OPTIONAL+=("${2:?--optional needs a value}"); shift 2 ;;
         --dry-run)     DRY_RUN=1; shift ;;
         -h|--help)     usage; exit 0 ;;
         *) echo "error: unknown option '$1'" >&2; usage >&2; exit 1 ;;
@@ -158,19 +165,44 @@ echo "resolved $resolved usable crates" >&2
 
 # --- 3. write the dependencies out -------------------------------------------
 
-# Crates that only build on Linux live in a target specific section.
+# Crates that only build on Linux live in a target specific section, crates
+# that do not compile next to the others are feature guarded.
 : > "$work/linux.txt"
-: > "$work/normal.txt"
+: > "$work/features.list"
+: > "$work/features.txt"
+: > "$work/deps.list"
 while read -r entry; do
     name=${entry%% =*}
+    version=${entry#*= }
+    version=${version#\"}
+    version=${version%\"}
+
     for lo in ${LINUX_ONLY[@]+"${LINUX_ONLY[@]}"}; do
         if [ "$name" = "$lo" ]; then
             echo "$entry" >> "$work/linux.txt"
             continue 2
         fi
     done
-    echo "$entry" >> "$work/normal.txt"
+
+    for op in ${OPTIONAL[@]+"${OPTIONAL[@]}"}; do
+        if [ "$name" = "$op" ]; then
+            echo "$name = { version = \"$version\", optional = true }" >> "$work/deps.list"
+            echo "$name = [\"dep:$name\"]" >> "$work/features.list"
+            continue 2
+        fi
+    done
+
+    echo "$entry" >> "$work/deps.list"
 done < "$work/deps.txt"
+
+LC_ALL=C sort -o "$work/deps.list" "$work/deps.list"
+LC_ALL=C sort -o "$work/linux.txt" "$work/linux.txt"
+LC_ALL=C sort -o "$work/features.list" "$work/features.list"
+
+{
+    echo "default = []"
+    cat "$work/features.list"
+} > "$work/features.txt"
 
 if [ "$DRY_RUN" -eq 1 ]; then
     cat "$work/deps.txt"
@@ -185,33 +217,45 @@ fi
 
 # Replace the dependency entries of the [dependencies] and of the Linux target
 # section, leaving every comment, blank line and other section untouched.
-awk -v deps="$work/normal.txt" -v linuxdeps="$work/linux.txt" '
+awk -v deps="$work/deps.list" -v linuxdeps="$work/linux.txt" -v features="$work/features.txt" '
     function emit(file,   line) {
         while ((getline line < file) > 0) print line
     }
     function close_section() {
         if (sect == "deps" && !emitted) emit(deps)
         if (sect == "linux" && !emitted) emit(linuxdeps)
+        if (sect == "features" && !emitted) emit(features)
         sect = ""; emitted = 0
     }
-    BEGIN { sect = ""; emitted = 0; seen_linux = 0 }
+    BEGIN { sect = ""; emitted = 0; seen_linux = 0; seen_features = 0 }
     /^[[:space:]]*\[/ {
         close_section()
         print
         if ($0 ~ /^[[:space:]]*\[dependencies\][[:space:]]*$/) sect = "deps"
+        else if ($0 ~ /^[[:space:]]*\[features\][[:space:]]*$/) { sect = "features"; seen_features = 1 }
         else if ($0 ~ /cfg\(target_os = "linux"\)/) { sect = "linux"; seen_linux = 1 }
         next
     }
     sect != "" {
         # keep comments and blank lines where they are
         if ($0 ~ /^[[:space:]]*#/ || $0 ~ /^[[:space:]]*$/) { print; next }
-        # first dependency line of the section: emit the new list here
-        if (!emitted) { emit(sect == "deps" ? deps : linuxdeps); emitted = 1 }
+        # first entry of the section: emit the new list here
+        if (!emitted) {
+            if (sect == "deps") emit(deps)
+            else if (sect == "linux") emit(linuxdeps)
+            else emit(features)
+            emitted = 1
+        }
         next
     }
     { print }
     END {
         close_section()
+        if (!seen_features) {
+            print ""
+            print "[features]"
+            while ((getline line < features) > 0) print line
+        }
         if (!seen_linux && (getline line < linuxdeps) > 0) {
             print ""
             print "[target.'"'"'cfg(target_os = \"linux\")'"'"'.dependencies]"

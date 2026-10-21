@@ -3,10 +3,22 @@ name = "radicle-dev"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+# Crates that resolve but do not compile next to the rest of the tree.
+# They are optional, so cargo only builds them when the matching
+# feature is enabled.
+default = []
+radicle-ci-adapter = ["dep:radicle-ci-adapter"]
+radicle-ci-ambient = ["dep:radicle-ci-ambient"]
+radicle-ci-broker = ["dep:radicle-ci-broker"]
+radicle-job = ["dep:radicle-job"]
+radicle-native-ci = ["dep:radicle-native-ci"]
+radicle-source = ["dep:radicle-source"]
+
 [dependencies]
 # Dependencies parsed from https://crates.io/search?q=radicle (110 crates) by
-# scripts/update-crates.sh. The 16 crates that cannot be used together with
-# the rest are listed, commented out, at the end of this section.
+# scripts/update-crates.sh. Six of them are feature guarded, the ten that are
+# listed, commented out, at the end of this section cannot be used at all.
 
 ambient-ci = "0.21.1"
 dpc-tau = "0.2.1"
@@ -41,6 +53,9 @@ radicle-artifact = "0.23.1"
 radicle-artifact-client = "0.23.1"
 radicle-artifact-core = "0.23.1"
 radicle-artifact-node = "0.23.1"
+radicle-ci-adapter = { version = "0.1.1", optional = true }
+radicle-ci-ambient = { version = "0.23.0", optional = true }
+radicle-ci-broker = { version = "0.32.1", optional = true }
 radicle-cli = "0.23.0"
 radicle-cli-test = "0.14.1"
 radicle-cob = "0.21.1"
@@ -51,8 +66,10 @@ radicle-fetch = "0.21.1"
 radicle-git-ext = "0.13.0"
 radicle-git-metadata = "0.2.1"
 radicle-git-ref-format = "0.2.0"
+radicle-job = { version = "0.6.0", optional = true }
 radicle-localtime = "0.1.0"
 radicle-log = "0.2.0"
+radicle-native-ci = { version = "0.14.0", optional = true }
 radicle-node = "0.21.1"
 radicle-oid = "0.2.2"
 radicle-protocol = "0.9.1"
@@ -62,6 +79,7 @@ radicle-registry-runtime = "0.0.0"
 radicle-remote-helper = "0.18.1"
 radicle-schemars = "0.9.1"
 radicle-signals = "0.12.1"
+radicle-source = { version = "0.4.0", optional = true }
 radicle-ssh = "0.10.0"
 radicle-std-ext = "0.2.0"
 radicle-surf = "0.29.0"
@@ -95,7 +113,9 @@ uli-wallet = "0.0.1"
 uli-zk = "0.0.1"
 
 # Excluded from the search results because they conflict with the crates
-# above. Uncommenting any of them breaks `cargo generate-lockfile`.
+# above. Uncommenting any of them breaks `cargo generate-lockfile`. They cannot
+# be feature guarded either: cargo resolves optional dependencies as well, so
+# they break the lockfile even with their feature turned off.
 # radicle-ed25519-compact = "2.0.3" # only published version is yanked
 # radicle-uri = "0.1.3"              # pins cyphergraphy =0.3.0, radicle needs ^0.3.1
 # rad-uri = "0.4.1"                  # depends on radicle-uri 0.1.0 (same conflict)
@@ -106,17 +126,6 @@ uli-zk = "0.0.1"
 # git-commit = "0.3.0"               # libgit2-sys links git2, clashes with radicle
 # radicle-feed = "0.5.3"             # libgit2-sys links git2, clashes with radicle
 # radicle-tui = "0.7.0"              # libgit2-sys links git2, clashes with radicle
-# radicle-native-ci = "0.14.0"       # pulls radicle 0.22 -> radicle-crypto 0.16,
-#                                    # which does not compile against cyphergraphy 0.3.1
-# The next four require radicle 0.24, whose radicle-cob 0.20.0 uses git2 0.20
-# while radicle-oid 0.2.2 (needed by radicle-cob 0.21.1) uses git2 0.21, so the
-# two cannot be linked into the same build.
-# radicle-ci-adapter = "0.1.1"
-# radicle-ci-ambient = "0.23.0"
-# radicle-ci-broker = "0.32.1"
-# radicle-job = "0.6.0"
-# radicle-source = "0.4.0"          # pulls radicle-surf 0.8, which does not
-#                                   # compile against git2 0.21
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # syd >= 3.24 pulls in hardened-malloc (needs glibc headers); 3.24-3.59 are all

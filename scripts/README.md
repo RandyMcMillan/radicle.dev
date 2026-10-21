@@ -97,12 +97,14 @@ scripts/update-crates.sh [options]
 | `--output <path>` | Write to `<path>` instead of updating the manifest. |
 | `--exclude <name>` | Skip a crate; may be passed multiple times. |
 | `--linux-only <name>` | Put a crate in the Linux target section; may be passed multiple times. |
+| `--optional <name>` | Feature guard a crate; may be passed multiple times. The crate is written as an optional dependency and gets a feature of the same name that turns it on. |
 | `--dry-run` | Print the resolved dependencies, change nothing. |
 | `-h`, `--help` | Show the help. |
 
-The script replaces the dependency entries of the `[dependencies]` section and
-of the Linux target section. Comments, blank lines and all other sections are
-left untouched, so the notes next to the dependencies survive an update.
+The script replaces the dependency entries of the `[dependencies]` section, of the
+`[features]` section and of the Linux target section. Comments, blank lines and
+all other sections are left untouched, so the notes next to the dependencies
+survive an update.
 
 ### Requirements
 
@@ -111,10 +113,14 @@ left untouched, so the notes next to the dependencies survive an update.
 ### The radicle manifest
 
 `Cargo.toml` in this repository holds every crate the `radicle` search returns
-— 110 of them — minus the 16 that cannot be used together with the rest. They
-are listed, commented out, at the end of the `[dependencies]` section together
-with the reason each one is excluded. The Linux only crates live in
-`[target.'cfg(target_os = "linux")'.dependencies]`.
+— 110 of them:
+
+| | Crates | Where |
+| --- | --- | --- |
+| Plain dependencies | 85 | `[dependencies]` |
+| Feature guarded | 6 | `[dependencies]`, as optional dependencies |
+| Linux only | 9 | `[target.'cfg(target_os = "linux")'.dependencies]` |
+| Excluded | 10 | commented out at the end of `[dependencies]` |
 
 The command that reproduces the current manifest:
 
@@ -123,24 +129,40 @@ scripts/update-crates.sh \
   --exclude radicle-ed25519-compact --exclude radicle-uri --exclude rad-uri \
   --exclude radicle-backup --exclude radicle-keystore --exclude gitorii \
   --exclude radicle-httpd --exclude git-commit --exclude radicle-feed \
-  --exclude radicle-tui --exclude radicle-native-ci --exclude radicle-ci-adapter \
-  --exclude radicle-ci-ambient --exclude radicle-ci-broker --exclude radicle-job \
-  --exclude radicle-source \
+  --exclude radicle-tui \
+  --optional radicle-native-ci --optional radicle-ci-adapter \
+  --optional radicle-ci-ambient --optional radicle-ci-broker --optional radicle-job \
+  --optional radicle-source \
   --linux-only syd \
   --linux-only rcp-tools-common --linux-only rcp-tools-filegen \
   --linux-only rcp-tools-rchm --linux-only rcp-tools-rcmp --linux-only rcp-tools-rcp \
   --linux-only rcp-tools-remote --linux-only rcp-tools-rlink --linux-only rcp-tools-rrm
 ```
 
-Excluded crates fall into three groups:
+### Feature guards
+
+Six crates resolve but do not compile next to the rest of the tree. They are
+written as optional dependencies, so `cargo check` stays green and the crate is
+only built when its feature is turned on:
+
+```toml
+[features]
+radicle-source = ["dep:radicle-source"]
+```
+
+Turning a feature on pulls in the broken code, so `cargo check --features
+radicle-source` fails to compile — that is the point of the guard, it keeps the
+rest of the tree buildable while the crate stays available.
+
+### Excluded crates
+
+The ten excluded crates cannot be feature guarded. Cargo resolves optional
+dependencies as well, so they break `cargo generate-lockfile` even when their
+feature is turned off. They fall into two groups:
 
 - **Version conflicts** — the crate cannot be resolved next to the others, for
   example `radicle-uri` pins `cyphergraphy =0.3.0` while `radicle` needs
   `^0.3.1`, and `radicle-backup` and `radicle-keystore` need two different
   `sqlite3`/`zeroize` versions.
-- **Unbuildable code** — the crate resolves but does not compile next to the
-  others, for example `radicle-native-ci` pulls `radicle 0.22`, whose
-  `radicle-crypto 0.16` predates the `Display` bound that `cyphergraphy 0.3.1`
-  added.
 - **Yanked releases** — `radicle-ed25519-compact` only ever published version
   has been yanked, so it cannot be depended on at all.
