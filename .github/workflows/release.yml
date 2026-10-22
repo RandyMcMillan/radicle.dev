@@ -24,6 +24,7 @@ env:
   CARGO_TERM_COLOR: always
   TAG: ${{ github.ref_name }}
   GH_TOKEN: ${{ github.token }}
+  RUSTFLAGS: --cfg tokio_unstable
 
 jobs:
   prepare:
